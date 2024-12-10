@@ -24,7 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'apps',  # 确保你的应用在这里
+    'backend.apps',  # 修改这一行，使用完整的路径
 ]
 
 MIDDLEWARE = [
