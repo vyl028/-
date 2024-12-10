@@ -1,4 +1,0 @@
-Flask==2.2.2
-Flask-SQLAlchemy==2.5.1
-# 如果使用 Flask-Migrate，请添加
-Flask-Migrate==3.1.0
