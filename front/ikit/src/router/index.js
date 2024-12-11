@@ -84,6 +84,16 @@ const router = createRouter({
       path: '/topic/detail/:id',
       name: 'topicDetail',
       component: () => import('../views/TopicDetailView.vue')
+    },
+    {
+      path: '/article/edit',
+      name: 'ArticleEdit',
+      component: () => import('@/views/ArticleEditView.vue')
+    },
+    {
+      path: '/post/edit',
+      name: 'PostEdit',
+      component: () => import('@/views/PostEditView.vue')
     }
   ]
 })

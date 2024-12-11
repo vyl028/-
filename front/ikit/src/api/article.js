@@ -27,4 +27,13 @@ export const shareArticle = (articleId) => {
     url: `/api/articles/${articleId}/share`,
     method: 'post'
   })
+}
+
+export const createArticle = async (articleData) => {
+  try {
+    const response = await request.post('/articles', articleData)
+    return response.data
+  } catch (error) {
+    throw error
+  }
 } 

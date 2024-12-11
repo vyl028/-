@@ -2,15 +2,29 @@
 import { ref, computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import CreateOptionsDialog from '@/views/CreateOptionsDialog.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
+const showCreateOptions = ref(false)
 
 // 控制底部导航栏显示
 const showBottomNav = computed(() => {
   // 在文章详情页隐藏底部导航
   return !route.path.includes('/article/detail')
 })
+
+const handleCreateClick = () => {
+  showCreateOptions.value = true
+}
+
+const handleCreateOptionsClose = () => {
+  showCreateOptions.value = false
+}
+
+const handleCreateOptionSelect = (type) => {
+  console.log('Selected option:', type)
+}
 </script>
 
 <template>
@@ -27,9 +41,9 @@ const showBottomNav = computed(() => {
         <span class="icon">🌎</span>
         <span>关注</span>
       </router-link>
-      <router-link to="/post/create" class="nav-item">
+      <div class="nav-item" @click="handleCreateClick">
         <div class="post-btn">+</div>
-      </router-link>
+      </div>
       <router-link to="/message" class="nav-item">
         <span class="icon">💬</span>
         <span>消息</span>
@@ -39,6 +53,13 @@ const showBottomNav = computed(() => {
         <span>我的</span>
       </router-link>
     </div>
+
+    <!-- 创作选项对话框 -->
+    <CreateOptionsDialog 
+      :show="showCreateOptions"
+      @close="handleCreateOptionsClose"
+      @select="handleCreateOptionSelect"
+    />
   </div>
 </template>
 
