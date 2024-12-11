@@ -79,6 +79,7 @@
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { showToast } from 'vant'
+import { updateAvatar } from '@/api/user'
 
 const userStore = useUserStore()
 const userInfo = ref({})
@@ -90,11 +91,37 @@ const chooseAvatar = () => {
   input.onchange = async (e) => {
     const file = e.target.files[0]
     if (file) {
+      // 检查文件类型
+      if (!file.type.startsWith('image/')) {
+        showToast('请选择图片文件')
+        return
+      }
+      
+      // 检查文件大小
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('图片大小不能超过5MB')
+        return
+      }
+      
       try {
-        await userStore.updateAvatar(file)
-        showToast('头像更新成功')
+        showToast({
+          message: '上传中...',
+          duration: 0
+        })
+        
+        await updateAvatar(file)
+        await userStore.getUserInfo()
+        
+        showToast({
+          message: '头像更新成功',
+          duration: 2000
+        })
       } catch (error) {
-        showToast('头像更新失败')
+        console.error('Avatar update error:', error)
+        showToast({
+          message: error.response?.data?.error || '头像更新失败',
+          duration: 2000
+        })
       }
     }
   }

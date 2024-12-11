@@ -9,12 +9,13 @@ class UserSerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
-        fields = '__all__'
+        fields = ['id', 'title', 'image', 'start_date', 'end_date', 
+                 'description', 'created_at', 'updated_at']
 
 class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
-        fields = '__all__'
+        fields = ['id', 'title', 'content', 'author', 'created_at', 'updated_at']
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:

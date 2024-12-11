@@ -106,9 +106,28 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media' 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 LOGGING = {
     'version': 1,
@@ -130,3 +149,30 @@ LOGGING = {
         },
     },
 } 
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'DEFAULT_FILTER_BACKENDS': [
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+} 
+
+# 文件上传设置
+FILE_UPLOAD_HANDLERS = [
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+]
+
+# 文件上传大小限制
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
+# 确保目录存在
+os.makedirs(os.path.join(MEDIA_ROOT, 'avatars'), exist_ok=True) 
