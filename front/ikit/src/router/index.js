@@ -66,8 +66,24 @@ const router = createRouter({
     },
     {
       path: '/article/detail/:id',
-      name: 'ArticleDetail',
-      component: () => import('@/views/ArticleDetailView.vue')
+      name: 'articleDetail',
+      component: () => import('../views/ArticleDetailView.vue')
+    },
+    {
+      path: '/follow',
+      name: 'follow',
+      component: () => import('../views/FollowView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/topics',
+      name: 'topics',
+      component: () => import('../views/TopicsView.vue')
+    },
+    {
+      path: '/topic/detail/:id',
+      name: 'topicDetail',
+      component: () => import('../views/TopicDetailView.vue')
     }
   ]
 })

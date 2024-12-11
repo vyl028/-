@@ -23,7 +23,7 @@ const showBottomNav = computed(() => {
         <span class="icon">🏠</span>
         <span>首页</span>
       </router-link>
-      <router-link to="/plaza" class="nav-item">
+      <router-link to="/follow" class="nav-item">
         <span class="icon">🌎</span>
         <span>关注</span>
       </router-link>

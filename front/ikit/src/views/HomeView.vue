@@ -18,7 +18,7 @@ const handleTabChange = (tab) => {
 // 定义导航项数据
 const navItems = [
   { icon: '🏠', text: '首页', path: '/home' },
-  { icon: '🌎', text: '关注', path: '/plaza' },
+  { icon: '🌎', text: '关注', path: '/follow' },
   { icon: '💬', text: '消息', path: '/message' },
   { icon: '👤', text: '我的', path: '/profile' }
 ]

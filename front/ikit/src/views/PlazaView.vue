@@ -15,6 +15,10 @@ const handleTabChange = (tab) => {
   }
 };
 
+const handleViewAllTopics = () => {
+  router.push('/topics')
+}
+
 onMounted(async () => {
     await postStore.fetchPosts();
     hotTopics.value = [
@@ -52,7 +56,7 @@ onMounted(async () => {
       <div class="section">
         <div class="section-header">
           <h2>热门话题</h2>
-          <span class="more">全部 ></span>
+          <span class="more" @click="handleViewAllTopics">全部 ></span>
         </div>
         <div class="topic-list">
           <div v-for="topic in hotTopics" 
