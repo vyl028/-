@@ -104,8 +104,7 @@ const currentCategory = ref('推荐')
 // 获取文章详情
 const fetchArticleDetail = async () => {
   try {
-    const id = route.params.id
-    await articleStore.fetchArticle(id)
+    await articleStore.fetchArticleDetail(route.params.id)
     article.value = articleStore.currentArticle
     if (!article.value) {
       showToast('文章不存在')
@@ -118,7 +117,7 @@ const fetchArticleDetail = async () => {
 }
 
 onMounted(() => {
-  // 在 Web 端，��态栏高度为 0
+  // 在 Web 端，状态栏高度为 0
   statusBarHeight.value = 0
   fetchArticleDetail()
 })
@@ -176,7 +175,7 @@ const sendComment = async () => {
       position: 'bottom'
     })
   } catch (error) {
-    showToast('评论失败，请重试')
+    showToast('��论失败，请重试')
   }
 }
 

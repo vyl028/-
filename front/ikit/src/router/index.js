@@ -68,24 +68,24 @@ const router = createRouter({
     },
     {
       path: '/article/detail/:id',
-      name: 'articleDetail',
-      component: () => import('../views/ArticleDetailView.vue')
+      name: 'ArticleDetail',
+      component: () => import('@/views/ArticleDetailView.vue')
     },
     {
       path: '/follow',
-      name: 'follow',
-      component: () => import('../views/FollowView.vue'),
+      name: 'Follow',
+      component: () => import('@/views/FollowView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/topics',
-      name: 'topics',
-      component: () => import('../views/TopicsView.vue')
+      name: 'Topics',
+      component: () => import('@/views/TopicsView.vue')
     },
     {
       path: '/topic/detail/:id',
-      name: 'topicDetail',
-      component: () => import('../views/TopicDetailView.vue')
+      name: 'TopicDetail',
+      component: () => import('@/views/TopicDetailView.vue')
     },
     {
       path: '/article/edit',
@@ -108,6 +108,11 @@ const router = createRouter({
       name: 'Fans',
       component: () => import('@/views/FansView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/articles',
+      name: 'Articles',
+      component: () => import('@/views/ArticlesView.vue')
     }
   ]
 })
