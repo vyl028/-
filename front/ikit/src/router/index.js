@@ -102,6 +102,12 @@ const router = createRouter({
       name: 'Collection',
       component: CollectionView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/fans',
+      name: 'Fans',
+      component: () => import('@/views/FansView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

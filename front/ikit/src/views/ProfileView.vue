@@ -19,7 +19,7 @@
           <div class="stat-label">收藏</div>
         </div>
         <div class="stat-divider">|</div>
-        <div class="stat-item">
+        <div class="stat-item" @click="handleFansClick">
           <div class="stat-num">222</div>
           <div class="stat-label">被关注</div>
         </div>
@@ -121,6 +121,12 @@ const handleCollectionClick = () => {
   console.log('点击收藏')
   showToast('正在跳转到收藏页面')
   router.push('/collection')
+}
+
+const handleFansClick = () => {
+  console.log('点击被关注')
+  showToast('正在跳转到粉丝页面')
+  router.push('/fans')
 }
 
 onMounted(async () => {
