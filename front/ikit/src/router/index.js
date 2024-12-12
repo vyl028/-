@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+// import { useUserStore } from '@/stores/user'  // 暂时注释掉
+// import { showToast } from 'vant'  // 暂时注释掉
+import CollectionView from '@/views/CollectionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -94,11 +96,24 @@ const router = createRouter({
       path: '/post/edit',
       name: 'PostEdit',
       component: () => import('@/views/PostEditView.vue')
+    },
+    {
+      path: '/collection',
+      name: 'Collection',
+      component: CollectionView,
+      meta: { requiresAuth: true }
     }
   ]
 })
 
 router.beforeEach((to, from, next) => {
+  // 暂时注释掉登录验证逻辑
+  // const userStore = useUserStore()
+  // if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+  //   showToast('请先登录')
+  //   next('/login')
+  //   return
+  // }
   next()
 })
 
