@@ -10,8 +10,8 @@ const showCreateOptions = ref(false)
 
 // 控制底部导航栏显示
 const showBottomNav = computed(() => {
-  // 在文章详情页隐藏底部导航
-  return !route.path.includes('/article/detail')
+  // 检查路由的 meta 信息
+  return !route.meta.hideBottomNav
 })
 
 const handleCreateClick = () => {
@@ -88,11 +88,11 @@ body {
   left: 0;
   right: 0;
   height: 50px;
-  background: #fff;
+  background-image: linear-gradient(90deg, rgba(227, 253, 245, 1) 0%, rgba(255, 230, 250, 1) 100%);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(238, 238, 238, 0.3);
   max-width: 600px;
   margin: 0 auto;
 }
@@ -102,7 +102,7 @@ body {
   flex-direction: column;
   align-items: center;
   text-decoration: none;
-  color: #666;
+  color: #333;
   font-size: 12px;
 }
 
@@ -114,7 +114,7 @@ body {
 .post-btn {
   width: 35px;
   height: 35px;
-  background: #000;
+  background: #333;
   color: #fff;
   border-radius: 50%;
   display: flex;
@@ -122,9 +122,11 @@ body {
   justify-content: center;
   font-size: 24px;
   margin-bottom: -10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .router-link-active {
-  color: #333;
+  color: #000;
+  font-weight: 500;
 }
 </style>

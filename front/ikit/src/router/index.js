@@ -30,9 +30,28 @@ const router = createRouter({
       component: () => import('../views/PlazaView.vue'),
       meta: { requiresAuth: true }
     },
+    // 首页分类的跳转：原神、等等
     {
       path: '/discover',
-      redirect: '/home'  // 同样重定向到 discover
+      redirect: '/home'  // 重定向到 home
+    },
+    {
+      path: '/discover/yuanshen',
+      name: 'yuanshen',
+      component: () => import('../views/HomeView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/discover/chuyin',
+      name: 'chuyin',
+      component: () => import('../views/HomeView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/discover/kimetsu',
+      name: 'kimetsu',
+      component: () => import('../views/HomeView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/activity',
@@ -94,6 +113,12 @@ const router = createRouter({
       path: '/post/edit',
       name: 'PostEdit',
       component: () => import('@/views/PostEditView.vue')
+    },
+    {
+      path: '/post/:id',
+      name: 'DynamicDetail',
+      component: () => import('@/views/DynamicDetailView.vue'),
+      meta: { hideBottomNav: true }
     }
   ]
 })
