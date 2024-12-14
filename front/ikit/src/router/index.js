@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+// import { useUserStore } from '@/stores/user'  // 暂时注释掉
+// import { showToast } from 'vant'  // 暂时注释掉
+import CollectionView from '@/views/CollectionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -85,24 +87,24 @@ const router = createRouter({
     },
     {
       path: '/article/detail/:id',
-      name: 'articleDetail',
-      component: () => import('../views/ArticleDetailView.vue')
+      name: 'ArticleDetail',
+      component: () => import('@/views/ArticleDetailView.vue')
     },
     {
       path: '/follow',
-      name: 'follow',
-      component: () => import('../views/FollowView.vue'),
+      name: 'Follow',
+      component: () => import('@/views/FollowView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/topics',
-      name: 'topics',
-      component: () => import('../views/TopicsView.vue')
+      name: 'Topics',
+      component: () => import('@/views/TopicsView.vue')
     },
     {
       path: '/topic/detail/:id',
-      name: 'topicDetail',
-      component: () => import('../views/TopicDetailView.vue')
+      name: 'TopicDetail',
+      component: () => import('@/views/TopicDetailView.vue')
     },
     {
       path: '/article/edit',
@@ -119,11 +121,35 @@ const router = createRouter({
       name: 'DynamicDetail',
       component: () => import('@/views/DynamicDetailView.vue'),
       meta: { hideBottomNav: true }
+    },
+    {
+      path: '/collection',
+      name: 'Collection',
+      component: CollectionView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/fans',
+      name: 'Fans',
+      component: () => import('@/views/FansView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/articles',
+      name: 'Articles',
+      component: () => import('@/views/ArticlesView.vue')
     }
   ]
 })
 
 router.beforeEach((to, from, next) => {
+  // 暂时注释掉登录验证逻辑
+  // const userStore = useUserStore()
+  // if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+  //   showToast('请先登录')
+  //   next('/login')
+  //   return
+  // }
   next()
 })
 
