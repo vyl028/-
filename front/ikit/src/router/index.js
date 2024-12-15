@@ -86,9 +86,10 @@ const router = createRouter({
       meta: { requiresAuth: false }
     },
     {
-      path: '/article/detail/:id',
+      path: '/article/:id',
       name: 'ArticleDetail',
-      component: () => import('@/views/ArticleDetailView.vue')
+      component: () => import('@/views/ArticleDetailView.vue'),
+      props: true
     },
     {
       path: '/follow',

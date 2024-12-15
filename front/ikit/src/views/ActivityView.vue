@@ -13,7 +13,7 @@
         @click="navigateToDetail(activity.id)"
       >
         <img 
-          :src="activity.image" 
+          :src="Array.isArray(activity.image) ? activity.image[0] : activity.image" 
           class="activity-image"
           @error="handleImageError"
         />
@@ -44,26 +44,42 @@ const userStore = useUserStore()
 const activities = ref([
   {
     id: 1,
-    title: '北京CCW华彩国际动漫游戏展',
-    image: '/src/assets/static/activity/ccw.jpg',
+    title: '广州暑期City walk，打卡正佳星球跨次元狂欢',
+    image: ['/src/assets/static/activity/activity1.png','/src/assets/static/activity/activity1-2.png','/src/assets/static/activity/activity1-3.png','/src/assets/static/activity/activity1-4.png'],
     startDate: '1月1日',
     endDate: '1月3日',
     isCollected: false
   },
   {
     id: 2,
-    title: '上海CP28动漫展',
-    image: '/src/assets/static/activity/cp.jpg',
+    title: '“二次元”走进现实，老商场焕发生机',
+    image: '/src/assets/static/activity/activity1-2.png',
     startDate: '2月1日',
     endDate: '2月3日',
     isCollected: false
   },
   {
     id: 3,
-    title: '广州萤火虫动漫展',
-    image: '/src/assets/static/activity/yhc.jpg', 
+    title: '最新二次元主题街区，亮相民盈·国贸城',
+    image: ['/src/assets/static/activity/activity2.png','/src/assets/static/activity/activity2-2.png','/src/assets/static/activity/activity2-3.png'], 
     startDate: '3月1日',
     endDate: '3月3日',
+    isCollected: false
+  },
+  {
+    id: 4,
+    title: '东门银泰大调改，将打造宁波最大二次元潮玩主题街区',
+    image: '/src/assets/static/activity/activity4.png',
+    startDate: '3月9日',
+    endDate: '3月12日',
+    isCollected: false
+  },
+  {
+    id: 5,
+    title: '百联ZX创趣场跨次元亮相：探索趣缘社群的二次元异世界',
+    image: ['/src/assets/static/activity/activity5.png','/src/assets/static/activity/activity5-2.png','/src/assets/static/activity/activity5-3.png'], 
+    startDate: '4月1日',
+    endDate: '4月3日',
     isCollected: false
   }
 ])
@@ -99,7 +115,7 @@ const handleImageError = (e) => {
   left: 0;
   right: 0;
   height: 44px;
-  background-color: #fff;
+  background-image: linear-gradient(90deg, rgba(227, 253, 245, 1) 0%, rgba(255, 230, 250, 1) 100%);
   display: flex;
   align-items: center;
   padding: 0 15px;
@@ -116,9 +132,10 @@ const handleImageError = (e) => {
 .title {
   flex: 1;
   text-align: center;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   color: #333;
+  font-weight:700;
 }
 
 .activity-list {
