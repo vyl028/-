@@ -4,28 +4,28 @@
     <div class="profile-header">
       <div class="user-info">
         <div class="avatar-section">
-          <img v-if="userInfo.avatar" :src="userInfo.avatar" class="avatar" />
-          <div v-else class="avatar-placeholder">
-            <span class="avatar-icon">👤</span>
+          <img v-if="userInfo.avatar" :src="userInfo.avatar" class="avatar" @click="chooseAvatar" />
+          <div v-else class="avatar-placeholder" @click="chooseAvatar">
+            <img src="@/assets/user/anon.jfif" alt="默认头像" class="default-avatar" />
           </div>
         </div>
-        <span class="username">{{ userInfo.username || 'XXXX' }}</span>
+        <span class="username">{{ userInfo.username || '千早爱音' }}</span>
         <span class="settings-icon">⚙️</span>
       </div>
-      
+
       <div class="stats-section">
         <div class="stat-item" @click="handleCollectionClick">
-          <div class="stat-num">111</div>
+          <div class="stat-num">116</div>
           <div class="stat-label">收藏</div>
         </div>
         <div class="stat-divider">|</div>
         <div class="stat-item" @click="handleFansClick">
-          <div class="stat-num">222</div>
+          <div class="stat-num">22W</div>
           <div class="stat-label">被关注</div>
         </div>
         <div class="stat-divider">|</div>
         <div class="stat-item" @click="handleFollowClick">
-          <div class="stat-num">333</div>
+          <div class="stat-num">261</div>
           <div class="stat-label">关注</div>
         </div>
       </div>
@@ -41,12 +41,19 @@
         <div class="date">11-21</div>
         <div class="post-images">
           <div class="image-grid">
-            <div class="image-item"></div>
-            <div class="image-item"></div>
+            <div class="image-item">
+              <img src="@/assets/user/dontai2.jpg" alt="动态图片1" />
+            </div>
+            <div class="image-item">
+              <img src="@/assets/user/dontai1.jpg" alt="动态图片2" />
+            </div>
           </div>
         </div>
         <div class="post-text">
-          正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文
+          含税售价：［PACK］1,100日元 /［BOX］ 6,600日元
+          尺寸：高度约90cm
+          规格：盲盒
+          种类数：通常版共5种，秘密版共6种（包括珍珠版本5种和超稀有1种）。每个BOX里有来自通常版（共5种）和秘密版（共6种）中的一种。
         </div>
         <div class="post-stats">
           <span>♥ 1111</span>
@@ -62,12 +69,8 @@
         <h2>我的文章</h2>
         <span class="more" @click="handleMoreArticles">more</span>
       </div>
-      <div 
-        class="article-item" 
-        v-for="article in userArticles" 
-        :key="article.id"
-        @click="handleArticleClick(article.id)"
-      >
+      <div class="article-item" v-for="article in userArticles" :key="article.id"
+        @click="handleArticleClick(article.id)">
         <h3 class="article-title">{{ article.title }}</h3>
         <div class="article-date">{{ article.date }}</div>
         <div class="article-content">
@@ -75,8 +78,9 @@
         </div>
         <div class="article-images">
           <div class="image-grid">
-            <div class="image-item"></div>
-            <div class="image-item"></div>
+            <div class="image-item" v-for="(image, index) in article.images" :key="index">
+              <img :src="image" :alt="`文章图片${index + 1}`" />
+            </div>
           </div>
         </div>
       </div>
@@ -90,6 +94,8 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { showToast } from 'vant'
 import { useArticleStore } from '@/stores/article'
+import article1 from '@/assets/user/article1.jpg'
+import article2 from '@/assets/user/article2.jpg'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -98,10 +104,10 @@ const userInfo = ref({})
 const userArticles = ref([
   {
     id: 1,
-    title: '标题标题标题标题标题标题',
+    title: '爱音的手办，不知道有没有搬运',
     date: '11-21',
-    summary: '正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文',
-    images: ['/src/assets/article1.jpg', '/src/assets/article2.jpg']
+    summary: '如果有人搬了就给还没看到的看一下,还有灯灯的，唉，魅魔。这是GK，要自己涂装的，还可以等官方出成品。',
+    images: [article1, article2]
   }
 ])
 
@@ -215,7 +221,29 @@ onMounted(async () => {
   margin-right: 12px;
 }
 
-.avatar, .avatar-placeholder {
+.avatar,
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* 确保图片不会超出圆形边界 */
+}
+
+.avatar img,
+.default-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 确保图片合适地填充容器 */
+}
+
+.avatar,
+.avatar-placeholder {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -302,18 +330,32 @@ onMounted(async () => {
 
 .image-item {
   aspect-ratio: 1;
-  background: #f5f5f5;
   border-radius: 8px;
+  overflow: hidden;
+  /* 确保图片不会超出圆角边界 */
 }
 
-.post-text, .article-content {
+.image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 确保图片填充整个容器并保持比例 */
+}
+
+.article-images {
+  margin-top: 12px;
+}
+
+.post-text,
+.article-content {
   font-size: 14px;
   line-height: 1.6;
   color: #333;
   margin-bottom: 12px;
 }
 
-.post-stats, .article-stats {
+.post-stats,
+.article-stats {
   display: flex;
   gap: 16px;
   color: #666;
@@ -351,4 +393,3 @@ onMounted(async () => {
   border-radius: 4px;
 }
 </style>
-

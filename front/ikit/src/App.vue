@@ -34,32 +34,29 @@ const handleCreateOptionSelect = (type) => {
     <!-- 底部导航栏 -->
     <div class="bottom-nav" v-if="showBottomNav">
       <router-link to="/home" class="nav-item">
-        <span class="icon">🏠</span>
+        <img src="@/assets/logo/home.svg" alt="首页" class="icon" />
         <span>首页</span>
       </router-link>
       <router-link to="/follow" class="nav-item">
-        <span class="icon">🌎</span>
+        <img src="@/assets/logo/slack.svg" alt="关注" class="icon" />
         <span>关注</span>
       </router-link>
       <div class="nav-item" @click="handleCreateClick">
-        <div class="post-btn">+</div>
+        <img src="@/assets/logo/plus.svg" alt="创建" class="post-btn" />
       </div>
       <router-link to="/message" class="nav-item">
-        <span class="icon">💬</span>
+        <img src="@/assets/logo/mail.svg" alt="消息" class="icon" />
         <span>消息</span>
       </router-link>
       <router-link to="/profile" class="nav-item">
-        <span class="icon">👤</span>
+        <img src="@/assets/logo/user.svg" alt="我的" class="icon" />
         <span>我的</span>
       </router-link>
     </div>
 
     <!-- 创作选项对话框 -->
-    <CreateOptionsDialog 
-      :show="showCreateOptions"
-      @close="handleCreateOptionsClose"
-      @select="handleCreateOptionSelect"
-    />
+    <CreateOptionsDialog :show="showCreateOptions" @close="handleCreateOptionsClose"
+      @select="handleCreateOptionSelect" />
   </div>
 </template>
 
@@ -114,7 +111,7 @@ body {
 .post-btn {
   width: 35px;
   height: 35px;
-  background: #333;
+  background: #ffffff;
   color: #fff;
   border-radius: 50%;
   display: flex;
