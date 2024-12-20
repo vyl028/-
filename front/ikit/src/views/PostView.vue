@@ -2,7 +2,7 @@
   <div class="post-container">
     <div class="header">
       <div class="back-icon" @click="router.back()">←</div>
-      <div class="title">发帖</div>
+      <div class="title">发帖1231223</div>
     </div>
     
     <div class="content">
