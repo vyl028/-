@@ -1,3 +1,94 @@
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { showToast } from 'vant'
+import { useArticleStore } from '@/stores/article'
+import article1 from '@/assets/user/article1.jpg'
+import article2 from '@/assets/user/article2.jpg'
+
+const router = useRouter()
+const userStore = useUserStore()
+const articleStore = useArticleStore()
+const userInfo = ref({})
+const userArticles = ref([
+  {
+    id: 1,
+    title: '爱音的手办，不知道有没有搬运',
+    date: '11-21',
+    summary: '如果有人搬了就给还没看到的看一下,还有灯灯的，唉，魅魔。这是GK，要自己涂装的，还可以等官方出成品。',
+    images: [article1, article2]
+  }
+])
+
+const chooseAvatar = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      try {
+        await userStore.updateAvatar(file)
+        showToast('头像更新成功')
+      } catch (error) {
+        showToast('头像更新失败')
+      }
+    }
+  }
+  input.click()
+}
+
+const formatDate = (date) => {
+  if (!date) return '11-21'
+  return new Date(date).toLocaleDateString()
+}
+
+const handleCollectionClick = () => {
+  console.log('点击收藏')
+  showToast('正在跳转到收藏页面')
+  router.push('/collection')
+}
+
+const handleFansClick = () => {
+  console.log('点击被关注')
+  showToast('正在跳转到粉丝页面')
+  router.push('/fans')
+}
+
+const handleFollowClick = () => {
+  console.log('点击关注')
+  showToast('正在跳转到关注页面')
+  router.push('/follow')
+}
+
+const handlePostClick = () => {
+  router.push(`/topic/detail/1`)
+}
+
+const handleArticleClick = async (articleId) => {
+  try {
+    console.log('点击文章:', articleId)
+    await articleStore.fetchArticleDetail(articleId)
+    router.push(`/article/detail/${articleId || 1}`)
+  } catch (error) {
+    showToast('获取文章详情失败')
+  }
+}
+
+const handleMorePosts = () => {
+  router.push('/topics')
+}
+
+const handleMoreArticles = () => {
+  router.push('/articles')
+}
+
+
+</script>
+
+
 <template>
   <div class="profile-container">
     <!-- 顶部个人信息 -->
@@ -88,115 +179,7 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { showToast } from 'vant'
-import { useArticleStore } from '@/stores/article'
-import article1 from '@/assets/user/article1.jpg'
-import article2 from '@/assets/user/article2.jpg'
 
-const router = useRouter()
-const userStore = useUserStore()
-const articleStore = useArticleStore()
-const userInfo = ref({})
-const userArticles = ref([
-  {
-    id: 1,
-    title: '爱音的手办，不知道有没有搬运',
-    date: '11-21',
-    summary: '如果有人搬了就给还没看到的看一下,还有灯灯的，唉，魅魔。这是GK，要自己涂装的，还可以等官方出成品。',
-    images: [article1, article2]
-  }
-])
-
-const chooseAvatar = () => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.onchange = async (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      try {
-        await userStore.updateAvatar(file)
-        showToast('头像更新成功')
-      } catch (error) {
-        showToast('头像更新失败')
-      }
-    }
-  }
-  input.click()
-}
-
-const formatDate = (date) => {
-  if (!date) return '11-21'
-  return new Date(date).toLocaleDateString()
-}
-
-const handleCollectionClick = () => {
-  console.log('点击收藏')
-  showToast('正在跳转到收藏页面')
-  router.push('/collection')
-}
-
-const handleFansClick = () => {
-  console.log('点击被关注')
-  showToast('正在跳转到粉丝页面')
-  router.push('/fans')
-}
-
-const handleFollowClick = () => {
-  console.log('点击关注')
-  showToast('正在跳转到关注页面')
-  router.push('/follow')
-}
-
-const handlePostClick = () => {
-  router.push(`/topic/detail/1`)
-}
-
-const handleArticleClick = async (articleId) => {
-  try {
-    console.log('点击文章:', articleId)
-    await articleStore.fetchArticleDetail(articleId)
-    router.push(`/article/detail/${articleId || 1}`)
-  } catch (error) {
-    showToast('获取文章详情失败')
-  }
-}
-
-const handleMorePosts = () => {
-  router.push('/topics')
-}
-
-const handleMoreArticles = () => {
-  router.push('/articles')
-}
-
-onMounted(async () => {
-  try {
-    userInfo.value = await userStore.getUserInfo()
-    // 先设置一个默认文章，避免空白
-    userArticles.value = [
-      {
-        id: 1,
-        title: '标题标题标题标题标题标题',
-        date: '11-21',
-        summary: '正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文正文',
-        images: ['/src/assets/article1.jpg', '/src/assets/article2.jpg']
-      }
-    ]
-    // 然后获取实际文章列表
-    await articleStore.fetchUserArticles()
-    if (articleStore.userArticles.length > 0) {
-      userArticles.value = articleStore.userArticles
-    }
-  } catch (error) {
-    showToast('获取信息失败')
-  }
-})
-</script>
 
 <style scoped>
 .profile-container {
