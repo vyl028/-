@@ -1,44 +1,10 @@
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import CommonTabs from '@/components/CommonTabs.vue'  // 添加这行
 
 const router = useRouter()
 const route = useRoute()
-const activeTab = ref('discover')
-
-// 增加发现/广场跟随下划线
-const underlineStyle = ref({ width: '0px', left: '0px' })
-
-// 添加更新下划线位置的方法
-const updateUnderlinePosition = () => {
-  const activeTabElement = activeTab.value === 'discover' 
-    ? document.querySelector('.tab:first-child') 
-    : document.querySelector('.tab:last-child')
-    
-  if (activeTabElement) {
-    const { width, left } = activeTabElement.getBoundingClientRect()
-    const parentLeft = activeTabElement.parentElement.getBoundingClientRect().left
-    underlineStyle.value = {
-      width: `${width}px`,
-      left: `${left - parentLeft}px`
-    }
-  }
-}
-
-// 处理标签页切换
-const handleTabChange = (tab) => {
-  activeTab.value = tab
-  if (tab === 'plaza') {
-    router.push('/plaza')
-  } else if (tab === 'discover') {
-    router.push('/home')
-      // 重置为推荐分类的内容
-    posts.value = getCategoryPosts('home')  // 使用getCategoryPosts方法筛选帖子
-  }
-  nextTick(() => {
-    updateUnderlinePosition()
-  })
-}
 
 // 定义分类导航数据
 const navItems = [
@@ -51,7 +17,7 @@ const navItems = [
 // 根据分类获取对应的帖子数据
 const getCategoryPosts = (category) => {
   console.log('当前分类:', category)
-  switch(category) {
+  switch (category) {
     case 'yuanshen':
       return allPosts.value.filter(post => post.tags.includes('原神'))
     case 'chuyin':
@@ -180,7 +146,7 @@ watch(() => route.path, (newPath) => {
 onMounted(() => {
   // 保存原始数据
   allPosts.value = [...posts.value]
-  
+
   // 根据当前路由设置初始内容
   const category = route.path.split('/').pop()
   console.log('组件挂载:', category)
@@ -199,9 +165,9 @@ const postLikes = ref({}) // 存储每个帖子的点赞数
 // 处理点赞
 const handleLike = (post, event) => {
   event.stopPropagation() // 阻止冒泡,避免触发帖子点击
-  
+
   const isLiked = likedPosts.value.has(post.id)
-  if(isLiked) {
+  if (isLiked) {
     likedPosts.value.delete(post.id)
     postLikes.value[post.id]--
   } else {
@@ -215,40 +181,23 @@ const handleLike = (post, event) => {
   <div class="home-page">
     <div class="top-section">
       <!-- 顶部标签页 -->
-      <div class="tabs">
-        <div 
-          :class="['tab', activeTab === 'discover' ? 'active' : '']"
-          @click="handleTabChange('discover')"
-          ref="discoverTab"
-        >发现</div>
-        <div 
-          :class="['tab', activeTab === 'plaza' ? 'active' : '']"
-          @click="handleTabChange('plaza')"
-          ref="plazaTab"
-        >广场</div>
-        <div class="underline" :style="underlineStyle"></div>
-      </div>
-  
+        <CommonTabs />
       <!-- 搜索框 -->
       <div class="search-box">
         <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
-          <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          <path fill="currentColor"
+            d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
         </svg>
         <input type="text" placeholder="我的手办收藏">
       </div>
-  
-    <div class="function-nav">
-      <div 
-        v-for="(item, index) in navItems"   
-        :key="index" 
-        class="nav-item"
-        :class="{ 'active': route.path.includes(item.path) }"
-        @click="handleNavigation(item.path)"
-      >
-        <span class="nav-text">{{ item.text }}</span>
+
+      <div class="function-nav">
+        <div v-for="(item, index) in navItems" :key="index" class="nav-item"
+          :class="{ 'active': route.path.includes(item.path) }" @click="handleNavigation(item.path)">
+          <span class="nav-text">{{ item.text }}</span>
+        </div>
       </div>
-    </div>
-  
+
       <!-- 轮播图 -->
       <div class="banner-container">
         <div class="banner-wrapper" :style="{ transform: `translateX(-${currentBanner * 100}%)` }">
@@ -257,36 +206,27 @@ const handleLike = (post, event) => {
           </div>
         </div>
         <div class="banner-dots">
-          <span 
-            v-for="(banner, index) in banners" 
-            :key="banner.id"
-            :class="['dot', { active: currentBanner === index }]"
-            @click="currentBanner = index"
-          ></span>
+          <span v-for="(banner, index) in banners" :key="banner.id"
+            :class="['dot', { active: currentBanner === index }]" @click="currentBanner = index"></span>
         </div>
       </div>
     </div>
-  
+
     <!-- 内容区域 -->
     <div class="content-grid">
-      <div 
-        v-for="post in posts" 
-        :key="post.id"
-        class="post-card"
-        @click="handlePostClick(post)"
-      >
+      <div v-for="post in posts" :key="post.id" class="post-card" @click="handlePostClick(post)">
         <div class="post-image">
-           <img :src="post.images[0]" alt="" /> <!-- 展示第一张图片 -->
+          <img :src="post.images[0]" alt="" /> <!-- 展示第一张图片 -->
         </div>
         <div class="post-info">
           <h3 class="post-username">{{ post.username }}</h3>
           <p class="post-title">{{ post.title }}</p>
           <div class="post-actions">
             <div class="like-btn" @click="handleLike(post, $event)">
-              <svg class="like-icon" :class="{ 'liked': likedPosts.has(post.id) }" 
-                   viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" 
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              <svg class="like-icon" :class="{ 'liked': likedPosts.has(post.id) }" viewBox="0 0 24 24" width="20"
+                height="20">
+                <path fill="currentColor"
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
               <span class="like-count" :class="{ 'liked': likedPosts.has(post.id) }">
                 {{ postLikes[post.id] }}
@@ -313,47 +253,6 @@ const handleLike = (post, event) => {
   padding-bottom: 15px;
 }
 
-.tabs {
-  position: sticky;
-  top: 0;
-  display: flex;
-  background: transparent;
-  padding: 0 16px;
-  position: relative;
-  justify-content: flex-start;
-  align-items: center;
-  height: 80px;
-}
-
-.tab {
-  flex: 1;
-  width: 60px;
-  font-size: 30px;
-  font-weight: 400;
-  letter-spacing: 0px;
-  line-height: 43.44px;
-  text-align: center;
-  opacity: 1;
-}
-
-.tab:first-child {
-  left: 96px;
-  top: 21px;
-  height: 51px;
-  color: rgba(0, 0, 0, 1);
-}
-
-.tab:last-child {
-  left: 200px;
-  top: 21px;
-  height: 51px;
-  color: rgba(128, 128, 128, 1);
-}
-
-.tab.active {
-  font-weight: 400;
-  color: rgba(0, 0, 0, 1);
-}
 
 .search-box {
   margin: 10px 15px;
@@ -366,8 +265,10 @@ const handleLike = (post, event) => {
 }
 
 .search-icon {
-  color: #999; /* 图标颜色 */
-  flex-shrink: 0; /* 防止图标被压缩 */
+  color: #999;
+  /* 图标颜色 */
+  flex-shrink: 0;
+  /* 防止图标被压缩 */
 }
 
 .search-box input {
@@ -376,7 +277,8 @@ const handleLike = (post, event) => {
   background: transparent;
   font-size: 14px;
   outline: none;
-  color: #333; /* 确保文字颜色足够深，便于阅读 */
+  color: #333;
+  /* 确保文字颜色足够深，便于阅读 */
 }
 
 .function-nav {
@@ -386,15 +288,16 @@ const handleLike = (post, event) => {
   gap: 10px;
   background: transparent;
   margin-bottom: 0;
+  position: relative;
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
 }
 
 .nav-icon {
@@ -407,19 +310,51 @@ const handleLike = (post, event) => {
   color: #333;
   font-weight: 400;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
-/* 选中状态样式 */
+/* 荧光笔效果 */
 .nav-item.active .nav-text {
-  font-weight: 600;
-  color: #000;
+  color: #FF69B4;
+  font-weight: 500;
+}
+
+.nav-item.active .nav-text::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 9px;
+  background: rgba(255, 105, 180, 0.2); /* 半透明粉色 */
+  z-index: -1;
+  border-radius: 1px;
+  animation: highlightIn 0.3s ease;
+}
+
+@keyframes highlightIn {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
+
+/* 选中状态样式 */
+.nav-item:hover .nav-text {
   transform: scale(1.05);
 }
 
-/* 悬停效果 */
-.nav-item:hover .nav-text {
+/* 选中状态文字样式 */
+.nav-item.active .nav-text {
+  color: #FF69B4;
   font-weight: 500;
-  transform: scale(1.02);
 }
 
 /* 点击效果 */
@@ -439,7 +374,7 @@ const handleLike = (post, event) => {
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .post-image {
@@ -478,10 +413,22 @@ const handleLike = (post, event) => {
 
 .underline {
   position: absolute;
-  bottom: 0;
+  bottom: 15px;
   height: 3px;
   background-color: #4CAF50;
   transition: all 0.3s ease;
+  border-radius: 1.5px;
+}
+
+/* 确保激活状态的样式正确 */
+.tab.active {
+  font-weight: 500;
+  color: #000;
+}
+
+/* 可选：添加悬停效果 */
+.tab:hover {
+  opacity: 0.8;
 }
 
 /* 调整导航项文字颜色，确保在渐变背景上清晰可见 */
@@ -545,14 +492,16 @@ const handleLike = (post, event) => {
 /* 修改下划线样式 */
 .underline {
   position: absolute;
-  bottom: 0;
+  bottom: 15px;
   height: 3px;
-  background-color: #4CAF50; /* 发现时的绿色 */
+  background-color: #4CAF50;
+  border-radius: 1.5px;
   transition: all 0.3s ease;
 }
 
 .tab:last-child .underline {
-  background-color: #808080; /* 广场时的灰色 */
+  background-color: #808080;
+  /* 广场时的灰色 */
 }
 
 .post-actions {
@@ -597,10 +546,20 @@ const handleLike = (post, event) => {
 }
 
 @keyframes heartPop {
-  0% { transform: scale(1); }
-  25% { transform: scale(1.2); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); }
-}
+  0% {
+    transform: scale(1);
+  }
 
+  25% {
+    transform: scale(1.2);
+  }
+
+  50% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
 </style>

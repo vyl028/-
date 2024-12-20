@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePostStore } from '@/stores/posts';
+import CommonTabs from '@/components/CommonTabs.vue'
 
 const router = useRouter();
 const postStore = usePostStore();
@@ -138,36 +139,6 @@ const activities = ref([
   { id: 3, title: '最新二次元主题街区，亮相民盈·国贸城' }
 ])
 
-const activeTab = ref('plaza');
-const underlineStyle = ref({ width: '0px', left: '0px' });
-
-const updateUnderlinePosition = () => {
-  const activeTabElement = activeTab.value === 'discover' 
-    ? document.querySelector('.tab:first-child') 
-    : document.querySelector('.tab:last-child')
-    
-  if (activeTabElement) {
-    const { width, left } = activeTabElement.getBoundingClientRect()
-    const parentLeft = activeTabElement.parentElement.getBoundingClientRect().left
-    underlineStyle.value = {
-      width: `${width}px`,
-      left: `${left - parentLeft}px`
-    }
-  }
-}
-
-const handleTabChange = (tab) => {
-  activeTab.value = tab;
-  if (tab === 'plaza') {
-    router.push('/plaza')
-  } else if (tab === 'discover') {
-    router.push('/home')
-  }
-  nextTick(() => {
-    updateUnderlinePosition();
-  });
-};
-
 const handleViewAllTopics = () => {
   router.push('/topics')
 }
@@ -217,34 +188,24 @@ const handleActivityClick = (activityId) => {
 }
 
 onMounted(async () => {
-  updateUnderlinePosition();
-});
+  // 删除 updateUnderlinePosition 相关代码
+})
 
 // 获取要显示的图片
 const getDisplayImage = (post) => {
   if (Array.isArray(post.image)) {
-    return post.image[0];
+    return post.image[0]
   }
-  return post.image;
-};
+  return post.image
+}
 </script>
 
 <template>
   <div class="plaza-page">
     <div class="top-section">
-      <!-- 顶部标签页 -->
-      <div class="tabs">
-        <div 
-          :class="['tab', activeTab === 'discover' ? 'active' : '']"
-          @click="handleTabChange('discover')"
-        >发现</div>
-        <div 
-          :class="['tab', activeTab === 'plaza' ? 'active' : '']"
-          @click="handleTabChange('plaza')"
-        >广场</div>
-        <div class="underline" :style="underlineStyle"></div>
-      </div>
-
+      <!-- 使用共享的 Tabs 组件 -->
+      <CommonTabs />
+      
       <!-- 搜索框 -->
       <div class="search-box">
         <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
@@ -350,48 +311,6 @@ const getDisplayImage = (post) => {
 .top-section {
   background-image: linear-gradient(90deg, rgba(227, 253, 245, 1) 0%, rgba(255, 230, 250, 1) 100%);
   padding-bottom: 15px;
-}
-
-.tabs {
-  position: sticky;
-  top: 0;
-  display: flex;
-  background: transparent;
-  padding: 0 16px;
-  position: relative;
-  justify-content: flex-start;
-  align-items: center;
-  height: 80px;
-}
-
-.tab {
-  flex: 1;
-  width: 60px;
-  font-size: 30px;
-  font-weight: 400;
-  letter-spacing: 0px;
-  line-height: 43.44px;
-  text-align: center;
-  opacity: 1;
-}
-
-.tab:first-child {
-  left: 96px;
-  top: 21px;
-  height: 51px;
-  color: rgba(128, 128, 128, 1);
-}
-
-.tab:last-child {
-  left: 200px;
-  top: 21px;
-  height: 51px;
-  color: rgba(0, 0, 0, 1);
-}
-
-.tab.active {
-  font-weight: 400;
-  color: rgba(0, 0, 0, 1);
 }
 
 .search-box {
