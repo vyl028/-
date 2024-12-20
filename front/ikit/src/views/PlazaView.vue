@@ -158,8 +158,10 @@ const updateUnderlinePosition = () => {
 
 const handleTabChange = (tab) => {
   activeTab.value = tab;
-  if (tab === 'discover') {
-    router.push('/home');
+  if (tab === 'plaza') {
+    router.push('/plaza')
+  } else if (tab === 'discover') {
+    router.push('/home')
   }
   nextTick(() => {
     updateUnderlinePosition();
@@ -960,12 +962,9 @@ const getDisplayImage = (post) => {
 }
 
 .post-title {
-  font-size: 16px;
-  color: #333;
-  margin: 0;
-  line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  line-clamp: 2;                /* 标准属性 */
+  -webkit-line-clamp: 2;        /* WebKit浏览器支持 */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

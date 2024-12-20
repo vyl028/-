@@ -132,9 +132,11 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { useFollowStore } from '../stores/follow'
 
 const route = useRoute()
 const router = useRouter()
+const followStore = useFollowStore()
 
 // 文章数据和状态
 const article = ref(null)
@@ -167,6 +169,11 @@ onMounted(async () => {
         likeCount.value = parsedArticle.stats?.likes || 0
         collectCount.value = parsedArticle.stats?.stars || 0
       }
+    }
+
+    // 检查是否已关注
+    if (article.value?.author?.id) {
+      isFollowed.value = followStore.isFollowing(article.value.author.id)
     }
   } catch (error) {
     console.error('加载文章失败:', error)
@@ -215,8 +222,16 @@ const handleCollect = () => {
 
 // 处理关注
 const handleFollow = () => {
-  isFollowed.value = !isFollowed.value
-  showToast(isFollowed.value ? '关注成功' : '已取消关注')
+  const userId = article.value?.author?.id
+  if (userId) {
+    if (isFollowed.value) {
+      followStore.unfollowUser(userId)
+    } else {
+      followStore.followUser(userId)
+    }
+    isFollowed.value = !isFollowed.value
+    showToast(isFollowed.value ? '关注成功' : '已取消关注')
+  }
 }
 
 // 处理分享

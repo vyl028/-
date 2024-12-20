@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // import { useUserStore } from '@/stores/user'  // 暂时注释掉
 // import { showToast } from 'vant'  // 暂时注释掉
 import CollectionView from '@/views/CollectionView.vue'
+import { useFollowStore } from '@/stores/follow'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -93,8 +94,8 @@ const router = createRouter({
     },
     {
       path: '/follow',
-      name: 'Follow',
-      component: () => import('@/views/FollowView.vue'),
+      name: 'follow',
+      component: () => import('../views/FollowView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -144,14 +145,12 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  // 暂时注释掉登录验证逻辑
-  // const userStore = useUserStore()
-  // if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-  //   showToast('请先登录')
-  //   next('/login')
-  //   return
-  // }
-  next()
+  next();
+})
+
+router.afterEach(() => {
+  const followStore = useFollowStore();
+  localStorage.setItem('followedUsers', JSON.stringify(followStore.followedUsers.value));
 })
 
 export default router
