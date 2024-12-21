@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useFollowStore } from '../stores/follow'
+import { showToast } from 'vant'
 
 const router = useRouter()
 const route = useRoute()
@@ -15,6 +17,7 @@ const dynamic = ref(null)
 const mockPosts = [
   {
     id: 1,
+    userId: 1,
     username: '动漫迷小杰',
     userAvatar: '/src/assets/avatar1.jpg',
     title: '今天终于收到了期待已久的《鬼灭之刃》..',
@@ -25,6 +28,7 @@ const mockPosts = [
   },
   {
     id: 2,
+    userId: 2,
     username: '手办达人莉莉',
     userAvatar: '/src/assets/avatar2.jpg',
     title: '手办修复记录',
@@ -35,6 +39,7 @@ const mockPosts = [
   },
   {
     id: 3,
+    userId: 3,
     username: '小轩',
     userAvatar: '/src/assets/avatar3.jpg',
     title: '手办摄影作品分享',
@@ -45,16 +50,18 @@ const mockPosts = [
   },
   {
     id: 4,
+    userId: 4,
     username: '游戏宅小明',
     userAvatar: '/src/assets/avatar4.jpg',
     title: '原神角色展示',
-    content: '胡桃太米了，狠狠吃了附属。这款手办完美还原了游戏中的角色形象和魅力，无论是服装还是表情都栩栩如生。手办的质量和细节处理也非常出色，让我感受到了制作团队的用心和热情。这次开箱真是让我大饱眼福！',
+    content: '胡桃太米了，狠狠吃了附属。这款手办完美还原了游戏中的角色形象和魅力，无论是服装还是表情都栩栩如生。手办的质量和细节处理非常出色，让我感受到了制作团队的用心和热情。这次开箱真是让我大饱眼福！',
     images: ['/src/assets/post4.png'],
     tags: ['原神', '胡桃'],
     commentCount: 67
   },
    {
     id: 5,
+    userId: 5,
     username: '小雪',
     userAvatar: '/src/assets/avatar4.jpg',
     title: '人活着就是为了初音未来！',
@@ -65,16 +72,29 @@ const mockPosts = [
   }
 ]
 
-onMounted(() => {
-  // 从路由 state 中获取帖子数据
-  if (router.currentRoute.value.state?.post) {
-    dynamic.value = router.currentRoute.value.state.post
-  } else {
-    // 如果没有 state（例如直接访问链接），根据 ID 查找帖子
-    const postId = parseInt(route.params.id)
-    // 从模拟数据中查找对应 ID 的帖子
-    const foundPost = mockPosts.find(post => post.id === postId)
-    dynamic.value = foundPost || mockPosts[0] // 如果找不到就使用第一条数据作为默认值
+const followStore = useFollowStore()
+
+onMounted(async () => {
+  try {
+    const postId = route.params.id
+    // 优先使用路由传递的状态数据
+    if (route.state?.post) {
+      dynamic.value = route.state.post
+    } else {
+      // 如果没有状态数据，再从 mockPosts 中查找
+      const foundPost = mockPosts.find(post => post.id.toString() === postId)
+      dynamic.value = foundPost || mockPosts[0]
+    }
+    
+    // 初始化 followStore
+    await followStore.fetchFollows();
+    
+    // 检查是否已关注该用户
+    if (dynamic.value?.userId) {
+      isFollowing.value = followStore.isFollowing(dynamic.value.userId)
+    }
+  } catch (error) {
+    console.error('加载帖子失败:', error)
   }
 })
 
@@ -109,8 +129,27 @@ const showNextImage = () => {
 }
 
 // 处理关注
-const handleFollow = () => {
-  isFollowing.value = !isFollowing.value
+const handleFollow = async () => {
+  if (!dynamic.value?.userId) return
+  
+  try {
+    if (isFollowing.value) {
+      await followStore.unfollowUser(dynamic.value.userId)
+      isFollowing.value = false
+    } else {
+      const userInfo = {
+        id: dynamic.value.userId,
+        name: dynamic.value.username,
+        avatar: dynamic.value.userAvatar
+      }
+      await followStore.followUser(dynamic.value.userId, userInfo)
+      isFollowing.value = true
+    }
+    showToast(isFollowing.value ? '关注成功' : '已取消关注')
+  } catch (error) {
+    console.error('关注操作失败:', error)
+    showToast('操作失败，请重试')
+  }
 }
 
 // 处理转发
@@ -163,7 +202,7 @@ const isCollected = ref(false)
 const likeCount = ref(1234)
 const collectCount = ref(56)
 
-// 处理点赞
+// 处理��赞
 const handleLike = () => {
   isLiked.value = !isLiked.value
   likeCount.value += isLiked.value ? 1 : -1
@@ -250,7 +289,7 @@ const handleInputFocus = () => {
                   </svg>
                   <span class="like-count">{{ comment.likeCount }}</span>
                 </span>
-                <span class="reply-btn" @click="replyComment(comment)">回复</span>
+                <span class="reply-btn" @click="replyComment(comment)">回���</span>
               </div>
             </div>
           </div>

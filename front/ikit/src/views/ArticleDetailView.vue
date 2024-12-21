@@ -221,16 +221,21 @@ const handleCollect = () => {
 }
 
 // 处理关注
-const handleFollow = () => {
+const handleFollow = async () => {
   const userId = article.value?.author?.id
   if (userId) {
-    if (isFollowed.value) {
-      followStore.unfollowUser(userId)
-    } else {
-      followStore.followUser(userId)
+    try {
+      if (isFollowed.value) {
+        await followStore.unfollowUser(userId)
+      } else {
+        await followStore.followUser(userId)
+      }
+      isFollowed.value = !isFollowed.value
+      showToast(isFollowed.value ? '关注成功' : '已取消关注')
+    } catch (error) {
+      console.error('关注操作失败:', error)
+      showToast('操作失败，请重试')
     }
-    isFollowed.value = !isFollowed.value
-    showToast(isFollowed.value ? '关注成功' : '已取消关注')
   }
 }
 
@@ -452,7 +457,7 @@ const handleReply = (comment) => {
   }
 }
 
-/* 评论区样式 */
+/* 评���区样式 */
 .comments-section {
   padding: 16px;
   background: #fff;

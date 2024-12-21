@@ -111,8 +111,17 @@ const handleAvatarError = (e) => {
 const handlePostClick = (post) => {
   router.push({
     name: 'DynamicDetail',
-    params: { id: post.id },
-    state: { post }
+    params: { 
+      id: post.id.toString()
+    },
+    state: { 
+      post: {
+        ...post,
+        userId: post.userId || post.id,  // 确保有 userId
+        username: post.username,
+        userAvatar: post.userAvatar
+      }
+    }
   })
 }
 

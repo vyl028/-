@@ -18,8 +18,8 @@ export const useFollowStore = defineStore('follow', () => {
     }
   ];
 
-  const follows = ref([...defaultFollows]);
-  const followedUsers = ref(new Set([1, 2]));
+  const follows = ref([]);
+  const followedUsers = ref(new Set());
 
   // 初始化本地存储
   const initLocalStorage = () => {
@@ -27,12 +27,15 @@ export const useFollowStore = defineStore('follow', () => {
     if (!stored) {
       localStorage.setItem('follows', JSON.stringify(defaultFollows));
       follows.value = [...defaultFollows];
+      defaultFollows.forEach(user => followedUsers.value.add(user.id));
     } else {
       try {
         follows.value = JSON.parse(stored);
+        follows.value.forEach(user => followedUsers.value.add(user.id));
       } catch (error) {
         console.error('解析本地存储数据失败:', error);
         follows.value = [...defaultFollows];
+        defaultFollows.forEach(user => followedUsers.value.add(user.id));
       }
     }
   };
@@ -51,12 +54,19 @@ export const useFollowStore = defineStore('follow', () => {
   };
 
   // 关注用户
-  const followUser = async (userId) => {
+  const followUser = async (userId, userInfo = null) => {
     try {
-      const userToAdd = defaultFollows.find(f => f.id === userId);
-      if (userToAdd && !followedUsers.value.has(userId)) {
+      if (!followedUsers.value.has(userId)) {
         followedUsers.value.add(userId);
-        follows.value.push({...userToAdd, isFollowed: true});
+        
+        const userToAdd = {
+          id: userId,
+          name: userInfo?.name || '用户名',
+          avatar: userInfo?.avatar || '/src/assets/default-avatar.jpg',
+          isFollowed: true
+        };
+        
+        follows.value = [...follows.value, userToAdd];
         localStorage.setItem('follows', JSON.stringify(follows.value));
       }
     } catch (error) {
@@ -77,11 +87,16 @@ export const useFollowStore = defineStore('follow', () => {
     }
   };
 
+  const isFollowing = (userId) => {
+    return followedUsers.value.has(userId)
+  }
+
   return {
     follows,
     followedUsers,
     fetchFollows,
     followUser,
-    unfollowUser
+    unfollowUser,
+    isFollowing
   };
 });
