@@ -165,6 +165,9 @@ onMounted(() => {
   posts.value.forEach(post => {
     postLikes.value[post.id] = post.likes || Math.floor(Math.random() * 1000)
   })
+
+  // 保存帖子数据到 localStorage
+  localStorage.setItem('allPosts', JSON.stringify(posts.value))
 })
 
 // 添加点赞状态管理
@@ -192,12 +195,12 @@ const handleLike = (post, event) => {
       <!-- 顶部标签页 -->
         <CommonTabs />
       <!-- 搜索框 -->
-      <div class="search-box">
+      <div class="search-box" @click="router.push('/search')">
         <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
           <path fill="currentColor"
             d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
         </svg>
-        <input type="text" placeholder="我的手办收藏">
+        <input type="text" placeholder="搜索内容" readonly>
       </div>
 
       <div class="function-nav">
@@ -279,7 +282,6 @@ const handleLike = (post, event) => {
   flex-shrink: 0;
   /* 防止图标被压缩 */
 }
-
 .search-box input {
   width: 100%;
   border: none;
