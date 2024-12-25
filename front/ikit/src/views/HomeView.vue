@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import CommonTabs from '@/components/CommonTabs.vue'  // 添加这行
 
@@ -44,7 +44,7 @@ const handleNavigationtiezi = (path) => {
   router.push(path)
 }
 
-// 添加帖子数据(动态数据)
+// 添加帖子��据(动态数据)
 const posts = ref([
   {
     id: 1,
@@ -166,14 +166,17 @@ onMounted(() => {
     postLikes.value[post.id] = post.likes || Math.floor(Math.random() * 1000)
   })
 
-  // 保存帖子数据到 localStorage，包含完整的用户信息
+  // 保存帖子数据到 localStorage
   const postsWithUserInfo = posts.value.map(post => ({
     ...post,
-    userId: post.userId || post.id,  // 确保有 userId
+    userId: post.userId || post.id,
     username: post.username,
     userAvatar: post.userAvatar
   }))
   localStorage.setItem('allPosts', JSON.stringify(postsWithUserInfo))
+
+  // 启动轮播图自动播放
+  startAutoPlay()
 })
 
 // 添加点赞状态管理
@@ -193,6 +196,11 @@ const handleLike = (post, event) => {
     postLikes.value[post.id]++
   }
 }
+
+// 添加组件卸载时的清理
+onUnmounted(() => {
+  stopAutoPlay()
+})
 </script>
 
 <template>
@@ -295,7 +303,7 @@ const handleLike = (post, event) => {
   font-size: 14px;
   outline: none;
   color: #333;
-  /* 确保文字颜色足够深，便于阅读 */
+  /* 确保文字颜色足够深，于阅读 */
 }
 
 .function-nav {
@@ -374,7 +382,7 @@ const handleLike = (post, event) => {
   font-weight: 500;
 }
 
-/* 点击效果 */
+/* 点击效��� */
 .nav-item:active .nav-text {
   transform: scale(0.98);
 }
