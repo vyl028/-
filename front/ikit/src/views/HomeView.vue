@@ -44,7 +44,7 @@ const handleNavigationtiezi = (path) => {
   router.push(path)
 }
 
-// 添加帖子��据(动态数据)
+// 添加帖子数据(动态数据)
 const posts = ref([
   {
     id: 1,
@@ -197,10 +197,6 @@ const handleLike = (post, event) => {
   }
 }
 
-// 添加组件卸载时的清理
-onUnmounted(() => {
-  stopAutoPlay()
-})
 </script>
 
 <template>
@@ -382,7 +378,7 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* 点击效��� */
+/* 点击效果 */
 .nav-item:active .nav-text {
   transform: scale(0.98);
 }
@@ -463,7 +459,7 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* 调整内容区域底部边距，避免被导航栏遮挡 */
+/* 调整内容区域底部距，避免被导航栏遮挡 */
 .content-grid {
   margin-bottom: 60px;
 }
