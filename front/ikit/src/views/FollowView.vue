@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFollowStore } from '@/stores/follow'
 import { showToast } from 'vant'
@@ -7,44 +7,83 @@ import { showToast } from 'vant'
 const router = useRouter()
 const followStore = useFollowStore()
 const follows = ref([])
-const posts = ref([])
+const allPosts = ref([])
+
+// 监听 followStore 中的关注列表变化
+watch(() => followStore.follows, (newFollows) => {
+  follows.value = newFollows.map(follow => ({
+    ...follow,
+    avatar: follow.avatar || '/src/assets/default-avatar.jpg',
+    name: follow.name || '用户名',
+    isFollowed: true
+  }))
+  
+  // 更新帖子列表
+  updatePosts()
+}, { deep: true })
+
+// 更新帖子列表的方法
+const updatePosts = async () => {
+  try {
+    const storedPosts = localStorage.getItem('allPosts')
+    if (storedPosts) {
+      const parsedPosts = JSON.parse(storedPosts)
+      // 确保所有的 userId 都是数字类型，并且过滤掉无效数据
+      const normalizedPosts = parsedPosts
+        .filter(post => post && post.userId) // 过滤掉无效数据
+        .map(post => ({
+          ...post,
+          userId: Number(post.userId)
+        }))
+      console.log('获取到的帖子数据:', normalizedPosts)
+      allPosts.value = normalizedPosts
+    } else {
+      // 使用默认的 mockPosts
+      const mockPosts = [
+        // ... 你的 mockPosts 数据
+      ]
+      allPosts.value = mockPosts
+    }
+    
+    console.log('当前关注的用户:', follows.value.map(f => Number(f.id)))
+  } catch (error) {
+    console.error('获取帖子列表失败:', error)
+  }
+}
+
+// 计算属性：只显示已关注用户的帖子
+const followedPosts = computed(() => {
+  const followedUserIds = follows.value.map(f => Number(f.id))
+  console.log('关注的用户IDs:', followedUserIds)
+  
+  if (!Array.isArray(allPosts.value)) {
+    console.warn('allPosts 不是数组:', allPosts.value)
+    return []
+  }
+  
+  const filtered = allPosts.value.filter(post => {
+    const postUserId = Number(post.userId)
+    console.log(`帖子 ${post.id} 的 userId:${postUserId}, 类型:${typeof postUserId}`)
+    const isIncluded = followedUserIds.includes(postUserId)
+    console.log(`是否包含:${isIncluded}`)
+    return !isNaN(postUserId) && isIncluded
+  })
+  
+  console.log('过滤后的帖子:', filtered)
+  return filtered
+})
+
 const isLoading = ref(true)
 const error = ref(null)
 
 onMounted(async () => {
   try {
     isLoading.value = true
-    
-    // 获取关注列表
-    const followData = await followStore.fetchFollows()
-    follows.value = followData.map(follow => ({
-      ...follow,
-      avatar: follow.avatar || '/src/assets/default-avatar.jpg',
-      name: follow.name || '用户名',
-      isFollowed: true
-    }))
-
-    console.log('获取到的关注列表:', follows.value)
-
-    // 获取关注用户的文章列表
-    posts.value = [
-      {
-        id: 1,
-        title: 'XX手办分享',
-        summary: 'XX手办开箱...',
-        coverImage: '/src/assets/post1.jpg'
-      },
-      {
-        id: 2,
-        title: 'Cos照片分享',
-        summary: '最新cos照片...',
-        coverImage: '/src/assets/post2.jpg'
-      }
-    ]
+    await followStore.fetchFollows()
+    await updatePosts()
   } catch (error) {
-    console.error('获取关注列表失败:', error)
+    console.error('初始化数据失败:', error)
     error.value = error
-    showToast('获取关注列表失败')
   } finally {
     isLoading.value = false
   }
@@ -59,10 +98,14 @@ const handleFollow = async (follow) => {
     if (follow.isFollowed) {
       await followStore.unfollowUser(follow.id)
       follows.value = follows.value.filter(f => f.id !== follow.id)
+      // 更新帖子列表
+      updatePosts()
       showToast('已取消关注')
     } else {
       await followStore.followUser(follow.id)
       follow.isFollowed = true
+      // 更新帖子列表
+      updatePosts()
       showToast('关注成功')
     }
   } catch (error) {
@@ -71,8 +114,14 @@ const handleFollow = async (follow) => {
   }
 }
 
-const handlePostClick = (postId) => {
-  router.push(`/post/${postId}`)
+const handlePostClick = (post) => {
+  router.push({
+    name: 'DynamicDetail',
+    params: { 
+      id: post.id.toString()
+    },
+    state: { post }
+  })
 }
 </script>
 
@@ -118,20 +167,31 @@ const handlePostClick = (postId) => {
         </div>
       </div>
 
-      <!-- 关注内容列表 -->
-      <div class="content-grid">
-        <div 
-          v-for="post in posts" 
-          :key="post.id"
-          class="post-card"
-          @click="handlePostClick(post.id)"
-        >
-          <div class="post-image">
-            <img :src="post.coverImage" alt="" @error="handleImageError" />
-          </div>
-          <div class="post-info">
-            <h3 class="post-title">{{ post.title }}</h3>
-            <p class="post-summary">{{ post.summary }}</p>
+      <!-- 添加帖子列表部分 -->
+      <div class="posts-container">
+        <div v-if="followedPosts.length === 0" class="empty-posts">
+          暂无关注用户的帖子
+        </div>
+        <div v-else class="content-grid">
+          <div v-for="post in followedPosts" 
+               :key="post.id" 
+               class="post-card" 
+               @click="handlePostClick(post)">
+            <div class="post-image">
+              <img :src="post.images[0]" alt="" @error="handleImageError" />
+            </div>
+            <div class="post-info">
+              <div class="post-header">
+                <img :src="post.userAvatar" 
+                     class="user-avatar" 
+                     @error="handleImageError" />
+                <span class="username">{{ post.username }}</span>
+              </div>
+              <p class="post-title">{{ post.title }}</p>
+              <div class="post-meta">
+                <span class="comment-count">{{ post.commentCount || 0 }} 评论</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -202,47 +262,57 @@ const handlePostClick = (postId) => {
 }
 
 .content-grid {
-  padding: 12px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
+  padding: 10px;
+  margin-top: 10px;
 }
 
 .post-card {
-  background: #fff;
+  background: white;
   border-radius: 8px;
   overflow: hidden;
-}
-
-.post-image {
-  width: 100%;
-  padding-top: 100%;
-  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .post-image img {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
-  height: 100%;
+  height: 150px;
   object-fit: cover;
 }
 
 .post-info {
-  padding: 8px;
+  padding: 10px;
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 8px;
 }
 
 .post-title {
   font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
+  margin: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.post-summary {
-  font-size: 12px;
-  color: #666;
-  line-height: 1.4;
+.empty-posts {
+  text-align: center;
+  padding: 20px;
+  color: #999;
 }
 
 .empty-state {

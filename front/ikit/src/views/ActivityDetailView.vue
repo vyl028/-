@@ -320,7 +320,10 @@ onMounted(() => {
   color: #333;
   line-height: 1.4;
   display: -webkit-box;
+  line-clamp: 2;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
   -webkit-line-clamp: 2;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

@@ -1,8 +1,7 @@
 <template>
   <div class="message-container">
     <div class="header">
-      <div class="title">消息</div>
-      <div class="settings-icon">⚙️</div>
+      <h1>消息</h1>
     </div>
 
     <!-- 消息类型导航 -->

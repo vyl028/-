@@ -134,15 +134,34 @@ const handleFollow = async () => {
   
   try {
     if (isFollowing.value) {
-      await followStore.unfollowUser(dynamic.value.userId)
+      await followStore.unfollowUser(Number(dynamic.value.userId))
       isFollowing.value = false
     } else {
+      // 保存完整的帖子数据
+      const postData = {
+        id: dynamic.value.id,
+        userId: Number(dynamic.value.userId),
+        username: dynamic.value.username,
+        userAvatar: dynamic.value.userAvatar,
+        title: dynamic.value.title,
+        content: dynamic.value.content,
+        images: dynamic.value.images,
+        tags: dynamic.value.tags,
+        commentCount: dynamic.value.commentCount
+      }
+      
+      // 保存到 localStorage
+      const storedPosts = JSON.parse(localStorage.getItem('allPosts') || '[]')
+      const updatedPosts = [...storedPosts, postData]
+      localStorage.setItem('allPosts', JSON.stringify(updatedPosts))
+      
+      // 关注用户
       const userInfo = {
-        id: dynamic.value.userId,
+        id: Number(dynamic.value.userId),
         name: dynamic.value.username,
         avatar: dynamic.value.userAvatar
       }
-      await followStore.followUser(dynamic.value.userId, userInfo)
+      await followStore.followUser(Number(dynamic.value.userId), userInfo)
       isFollowing.value = true
     }
     showToast(isFollowing.value ? '关注成功' : '已取消关注')
@@ -202,7 +221,7 @@ const isCollected = ref(false)
 const likeCount = ref(1234)
 const collectCount = ref(56)
 
-// 处理��赞
+// 处理点赞
 const handleLike = () => {
   isLiked.value = !isLiked.value
   likeCount.value += isLiked.value ? 1 : -1
@@ -289,7 +308,7 @@ const handleInputFocus = () => {
                   </svg>
                   <span class="like-count">{{ comment.likeCount }}</span>
                 </span>
-                <span class="reply-btn" @click="replyComment(comment)">回���</span>
+                <span class="reply-btn" @click="replyComment(comment)">回复</span>
               </div>
             </div>
           </div>

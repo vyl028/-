@@ -166,8 +166,14 @@ onMounted(() => {
     postLikes.value[post.id] = post.likes || Math.floor(Math.random() * 1000)
   })
 
-  // 保存帖子数据到 localStorage
-  localStorage.setItem('allPosts', JSON.stringify(posts.value))
+  // 保存帖子数据到 localStorage，包含完整的用户信息
+  const postsWithUserInfo = posts.value.map(post => ({
+    ...post,
+    userId: post.userId || post.id,  // 确保有 userId
+    username: post.username,
+    userAvatar: post.userAvatar
+  }))
+  localStorage.setItem('allPosts', JSON.stringify(postsWithUserInfo))
 })
 
 // 添加点赞状态管理
