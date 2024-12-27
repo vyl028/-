@@ -119,7 +119,7 @@ const posts = ref([
       },
       {
         type: 'text',
-        content: '修复后的手办放在专门的展示柜中，避免再次受损。希望这个修复日志能给大家一些参考！'
+        content: '修复后的手办放在专门的��示柜中，避免再次受损。希望这个修复日志能给大家一些参考！'
       },
       {
         type: 'image',
@@ -203,16 +203,8 @@ const getDisplayImage = (post) => {
 <template>
   <div class="plaza-page">
     <div class="top-section">
-      <!-- 使用共享的 Tabs 组件 -->
+      <!-- 只保留 Tabs 组件 -->
       <CommonTabs />
-      
-      <!-- 搜索框 -->
-      <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18">
-          <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-        </svg>
-        <input type="text" placeholder="搜索感兴趣的内容">
-      </div>
     </div>
 
     <div class="plaza-container">
@@ -311,38 +303,6 @@ const getDisplayImage = (post) => {
 .top-section {
   background-image: linear-gradient(90deg, rgba(227, 253, 245, 1) 0%, rgba(255, 230, 250, 1) 100%);
   padding-bottom: 15px;
-}
-
-.search-box {
-  margin: 10px 15px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  padding: 8px 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.search-icon {
-  color: #999;
-  flex-shrink: 0;
-}
-
-.search-box input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  outline: none;
-  color: #333;
-}
-
-.underline {
-  position: absolute;
-  bottom: 0;
-  height: 3px;
-  background-color: #4CAF50;
-  transition: all 0.3s ease;
 }
 
 .section {
