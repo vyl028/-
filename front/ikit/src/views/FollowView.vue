@@ -11,12 +11,25 @@ const allPosts = ref([])
 
 // 监听 followStore 中的关注列表变化
 watch(() => followStore.follows, (newFollows) => {
-  follows.value = newFollows.map(follow => ({
+  // 不要直接赋值，而是合并现有的关注列表
+  const existingFollows = follows.value || []
+  const updatedFollows = newFollows.map(follow => ({
     ...follow,
     avatar: follow.avatar || '/src/assets/default-avatar.jpg',
     name: follow.name || '用户名',
-    isFollowed: true
+    isFollowed: true,
+    showUnfollow: false
   }))
+  
+  // 使用 Map 来去重
+  const uniqueFollows = new Map()
+  const allFollows = existingFollows.concat(updatedFollows)
+  allFollows.forEach(follow => {
+    uniqueFollows.set(follow.id, follow)
+  })
+  
+  // 转换回数组
+  follows.value = Array.from(uniqueFollows.values())
   
   // 更新帖子列表
   updatePosts()
@@ -80,6 +93,15 @@ onMounted(async () => {
   try {
     isLoading.value = true
     await followStore.fetchFollows()
+    // 确保获取所有关注的用户信息
+    const storedFollows = JSON.parse(localStorage.getItem('followingUsers') || '[]')
+    follows.value = storedFollows.map(follow => ({
+      ...follow,
+      avatar: follow.avatar || '/src/assets/default-avatar.jpg',
+      name: follow.name || '用户名',
+      isFollowed: true,
+      showUnfollow: false
+    }))
     await updatePosts()
   } catch (error) {
     console.error('初始化数据失败:', error)
@@ -95,21 +117,21 @@ const handleImageError = (e) => {
 
 const handleFollow = async (follow) => {
   try {
-    if (follow.isFollowed) {
-      await followStore.unfollowUser(follow.id)
-      follows.value = follows.value.filter(f => f.id !== follow.id)
-      // 更新帖子列表
-      updatePosts()
-      showToast('已取消关注')
-    } else {
-      await followStore.followUser(follow.id)
-      follow.isFollowed = true
-      // 更新帖子列表
-      updatePosts()
-      showToast('关注成功')
-    }
+    // 由于在关注列表中，所有用户都是已关注状态
+    await followStore.unfollowUser(follow.id)
+    // 从关注列表中移除
+    follows.value = follows.value.filter(f => f.id !== follow.id)
+    
+    // 更新 localStorage
+    const storedFollows = JSON.parse(localStorage.getItem('followingUsers') || '[]')
+    const updatedFollows = storedFollows.filter(f => f.id !== follow.id)
+    localStorage.setItem('followingUsers', JSON.stringify(updatedFollows))
+    
+    // 更新帖子列表
+    updatePosts()
+    showToast('已取消关注')
   } catch (error) {
-    console.error('关注操作失败:', error)
+    console.error('取消关注失败:', error)
     showToast('操作失败，请重试')
   }
 }
@@ -159,10 +181,12 @@ const handlePostClick = (post) => {
           <div class="user-name">{{ follow.name }}</div>
           <div 
             class="follow-button"
-            :class="{ 'followed': follow.isFollowed }"
+            :class="{ 'followed': true }"
             @click="handleFollow(follow)"
+            @mouseenter="follow.showUnfollow = true"
+            @mouseleave="follow.showUnfollow = false"
           >
-            {{ follow.isFollowed ? '已关注' : '关注' }}
+            {{ follow.showUnfollow ? '取消关注' : '已关注' }}
           </div>
         </div>
       </div>
@@ -253,12 +277,24 @@ const handlePostClick = (post) => {
   padding: 4px 12px;
   border-radius: 15px;
   font-size: 12px;
-  background: #f5f5f5;
-  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #eee;
 }
 
 .follow-button.followed {
-  background: #eee;
+  background: #fff;
+  color: #666;
+}
+
+.follow-button.followed:hover {
+  background: #ff4d4d;
+  color: white;
+  border-color: #ff4d4d;
+}
+
+.follow-button:active {
+  transform: scale(0.95);
 }
 
 .content-grid {

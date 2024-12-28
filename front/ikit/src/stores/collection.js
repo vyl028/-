@@ -1,38 +1,68 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 
-export const useCollectionStore = defineStore('collection', () => {
-  const collections = ref([])
-  const isLoading = ref(false)
+export const useCollectionStore = defineStore('collection', {
+  state: () => {
+    // 从 localStorage 加载初始数据
+    let savedCollections = {}
+    let savedCounts = {}
 
-  const fetchCollections = async () => {
     try {
-      isLoading.value = true
-      console.log('Fetching collections in store')
-      
-      // 模拟数据
-      collections.value = [
-        {
-          id: 1,
-          title: '标题标题标题标题标题标题',
-          date: '11-21',
-          author: 'XXX',
-          content: '正文正文正文正文正文正文',
-          likes: '1111',
-          comments: '1w+'
-        }
-      ]
-    } catch (error) {
-      console.error('Store error:', error)
-      throw error
-    } finally {
-      isLoading.value = false
+      savedCollections = JSON.parse(localStorage.getItem('collections') || '{}')
+      savedCounts = JSON.parse(localStorage.getItem('collectionCounts') || '{}')
+    } catch (e) {
+      console.error('Failed to load collections from localStorage:', e)
     }
-  }
 
-  return {
-    collections,
-    isLoading,
-    fetchCollections
+    return {
+      collections: savedCollections,
+      collectionCounts: savedCounts
+    }
+  },
+
+  actions: {
+    setInitialCollections(postId, count) {
+      if (!this.collectionCounts[postId]) {
+        this.collectionCounts[postId] = count
+      }
+    },
+
+    isPostCollected(postId) {
+      return !!this.collections[postId]
+    },
+
+    getCollectionCount(postId) {
+      return this.collectionCounts[postId] || 0
+    },
+
+    fetchCollections() {
+      return Object.values(this.collections)
+    },
+
+    toggleCollection(post) {
+      const postId = post.id
+      const isCurrentlyCollected = !!this.collections[postId]
+
+      if (isCurrentlyCollected) {
+        delete this.collections[postId]
+        const currentCount = this.collectionCounts[postId] || 0
+        this.collectionCounts[postId] = Math.max(0, currentCount - 1)
+      } else {
+        this.collections[postId] = {
+          ...post,
+          collectCount: (this.collectionCounts[postId] || 0) + 1
+        }
+        this.collectionCounts[postId] = (this.collectionCounts[postId] || 0) + 1
+      }
+
+      // 保存到 localStorage
+      try {
+        localStorage.setItem('collections', JSON.stringify(this.collections))
+        localStorage.setItem('collectionCounts', JSON.stringify(this.collectionCounts))
+      } catch (e) {
+        console.error('Failed to save collections to localStorage:', e)
+      }
+
+      return !isCurrentlyCollected
+    }
   }
 }) 
