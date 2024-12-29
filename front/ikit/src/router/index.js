@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // import { showToast } from 'vant'  // 暂时注释掉
 import CollectionView from '@/views/CollectionView.vue'
 import { useFollowStore } from '@/stores/follow'
+import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,13 +26,13 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
-      meta: { requiresAuth: true }
+
     },
     {
       path: '/plaza',
       name: 'plaza',
       component: () => import('../views/PlazaView.vue'),
-      meta: { requiresAuth: true }
+
     },
     // 首页分类的跳转：原神、等等
     {
@@ -42,25 +43,25 @@ const router = createRouter({
       path: '/discover/yuanshen',
       name: 'yuanshen',
       component: () => import('../views/HomeView.vue'),
-      meta: { requiresAuth: true }
+
     },
     {
       path: '/discover/chuyin',
       name: 'chuyin',
       component: () => import('../views/HomeView.vue'),
-      meta: { requiresAuth: true }
+
     },
     {
       path: '/discover/kimetsu',
       name: 'kimetsu',
       component: () => import('../views/HomeView.vue'),
-      meta: { requiresAuth: true }
+
     },
     {
       path: '/activity',
       name: 'activity',
       component: () => import('../views/ActivityView.vue'),
-      meta: { requiresAuth: true }
+
     },
     {
       path: '/message',
@@ -72,7 +73,7 @@ const router = createRouter({
       path: '/activity/detail/:id',
       name: 'activityDetail',
       component: () => import('../views/ActivityDetailView.vue'),
-      meta: { requiresAuth: true }
+
     },
     {
       path: '/post',
@@ -111,12 +112,14 @@ const router = createRouter({
     {
       path: '/article/edit',
       name: 'ArticleEdit',
-      component: () => import('@/views/ArticleEditView.vue')
+      component: () => import('@/views/ArticleEditView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/post/edit',
       name: 'PostEdit',
-      component: () => import('@/views/PostEditView.vue')
+      component: () => import('@/views/PostEditView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/post/:id',

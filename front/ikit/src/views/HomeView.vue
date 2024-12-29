@@ -1,14 +1,123 @@
 <script setup>
-import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useLikeStore } from '@/stores/like'
+import { useCollectionStore } from '@/stores/collection'
+import { getPosts } from '@/api/posts'
 import CommonTabs from '@/components/CommonTabs.vue'
-import { useLikeStore } from '../stores/like'
-import { useCollectionStore } from '../stores/collection'
+import { showToast, showLoadingToast } from 'vant'
+import { likePost, unlikePost } from '@/api/likes'
 
 const router = useRouter()
 const route = useRoute()
 const likeStore = useLikeStore()
 const collectionStore = useCollectionStore()
+
+// 存储所有帖子的数据
+const postList = ref([])
+
+// 处理图片路径的辅助函数
+const processImagePath = (imagePath) => {
+  if (!imagePath) return ''
+  // 如果已经是完整的 URL，直接返回
+  if (imagePath.startsWith('http')) return imagePath
+  // 如果以 /src/assets 开头，移除开头的斜杠
+  if (imagePath.startsWith('/src/assets/')) {
+    return imagePath.substring(1)
+  }
+  // 如果是相对路径（avatars/），添加 src/assets/
+  if (imagePath.startsWith('avatars/')) {
+    return `src/assets/${imagePath}`
+  }
+  return imagePath
+}
+
+// 获取帖子列表
+const fetchPosts = async (params = {}) => {
+  try {
+    const response = await getPosts(params)
+    console.log('后端返回的帖子数据:', response)
+    
+    postList.value = response.map(post => {
+      // 解析图片路径
+      let images = []
+      try {
+        const imagesStr = post.postimages.replace(/'/g, '"')
+        const parsedImages = JSON.parse(imagesStr)
+        images = Array.isArray(parsedImages) ? parsedImages.map(processImagePath) : []
+      } catch (e) {
+        console.error('解析图片路径失败:', e, post.postimages)
+        images = []
+      }
+
+      // 解析标签
+      let tags = []
+      try {
+        const tagsStr = post.posttags.replace(/'/g, '"')
+        tags = JSON.parse(tagsStr)
+      } catch (e) {
+        console.error('解析标签失败:', e)
+        tags = []
+      }
+
+      return {
+        id: post.id,
+        userid: post.userid,
+        username: post.username,
+        nickname: post.nickname,
+        userAvatar: processImagePath(post.avatar),
+        description: post.description,
+        title: post.posttitle,
+        content: post.postcontent,
+        createdTime: new Date(post.postcreated_time).toLocaleString(),
+        images,
+        tags,
+        likeCount: post.like_count || 0,
+        collectCount: post.collect_count || 0,
+        commentCount: post.comment_count || 0,
+        isLiked: post.is_like || false,
+        isCollected: post.is_collect || false
+      }
+    })
+
+    console.log('处理后的帖子数据:', postList.value)
+  } catch (error) {
+    console.error('获取帖子列表失败:', error)
+    showToast('获取帖子列表失败')
+    postList.value = []
+  }
+}
+
+// 根据分类获取对应的帖子数据
+const handleCategoryChange = async (category) => {
+  console.log('当前分类:', category)
+  try {
+    if (category === 'home') {
+      // 获取所有帖子
+      await fetchPosts()
+    } else {
+      // 根据分类获取帖子
+      await fetchPosts({ category })
+    }
+  } catch (error) {
+    console.error('获取分类帖子失败:', error)
+    showToast('获取分类帖子失败')
+  }
+}
+
+// 处理导航点击
+const handleNavigationtiezi = (path) => {
+  const category = path.split('/').pop()
+  console.log('点击分类:', category)
+  handleCategoryChange(category)
+  router.push(path)
+}
+
+// 在组件挂载时获取数据
+onMounted(() => {
+  fetchPosts()
+  startAutoPlay()
+})
 
 // 定义分类导航数据
 const navItems = [
@@ -18,33 +127,8 @@ const navItems = [
   { text: '鬼灭之刃', path: '/discover/kimetsu' }
 ]
 
-// 根据分类获取对应的帖子数据
-const getCategoryPosts = (category) => {
-  console.log('当前分类:', category)
-  switch (category) {
-    case 'yuanshen':
-      return posts.value.filter(post => post.tags.includes('原神'))
-    case 'chuyin':
-      return posts.value.filter(post => post.tags.includes('初音未来'))
-    case 'kimetsu':
-      return posts.value.filter(post => post.tags.includes('鬼灭之刃'))
-    case 'home':
-    default:
-      return posts.value // 推荐页面显示所有帖子
-  }
-}
-
 // 添加导航方法
 const handleNavigation = (path) => {
-  router.push(path)
-}
-
-
-// 处理导航点击
-const handleNavigationtiezi = (path) => {
-  const category = path.split('/').pop()
-  console.log('点击分类:', category)
-  posts.value = getCategoryPosts(category)
   router.push(path)
 }
 
@@ -113,31 +197,10 @@ const handleAvatarError = (e) => {
 
 // 处理帖子点击，传递完整的帖子信息
 const handlePostClick = (post) => {
-  // 确保获取最新的点赞和收藏状态
-  const currentLikeCount = likeStore.getLikeCount(post.id) || 0
-  const currentIsLiked = likeStore.isPostLiked(post.id)
-  const currentCollectCount = collectionStore.getCollectionCount(post.id) || 0
-  const currentIsCollected = collectionStore.isPostCollected(post.id)
-
-  const updatedPost = {
-    ...post,
-    userId: post.userId || post.id,
-    likeCount: currentLikeCount,
-    isLiked: currentIsLiked,
-    collectCount: currentCollectCount,
-    isCollected: currentIsCollected
-  }
-
-  // 更新本地状态
-  const postIndex = posts.value.findIndex(p => p.id === post.id)
-  if (postIndex !== -1) {
-    posts.value[postIndex] = updatedPost
-  }
-
   router.push({
     name: 'DynamicDetail',
-    params: { id: post.id.toString() },
-    state: { post: updatedPost }
+    params: { id: post.id },
+    state: { post }
   })
 }
 
@@ -166,7 +229,7 @@ const displayPosts = ref([])
 
 // 处理帖子数据的计算属性
 const processedPosts = computed(() => {
-  return posts.value.map(post => ({
+  return postList.value.map(post => ({
     ...post,
     likeCount: likeStore.getLikeCount(post.id),
     isLiked: likeStore.isPostLiked(post.id),
@@ -180,7 +243,7 @@ watch(
   () => collectionStore.collections,
   () => {
     // 更新所有帖子的收藏状态
-    posts.value = posts.value.map(post => ({
+    postList.value = postList.value.map(post => ({
       ...post,
       collectCount: collectionStore.getCollectionCount(post.id),
       isCollected: collectionStore.isPostCollected(post.id)
@@ -188,72 +251,100 @@ watch(
   }
 )
 
-// 在组件挂载时初始化数据
-onMounted(() => {
-  // 根据当前路由设置初始内容
-  const category = route.path.split('/').pop()
-  posts.value = getCategoryPosts(category)
-
-  // 初始化每个帖子的点赞和收藏数据
-  posts.value.forEach(post => {
-    if (typeof likeStore.getLikeCount(post.id) === 'undefined') {
-      likeStore.setInitialLikes(post.id, 0)
-    }
-    if (typeof collectionStore.getCollectionCount(post.id) === 'undefined') {
-      collectionStore.setInitialCollections(post.id, 0)
-    }
-  })
-
-  // 保存帖子数据到 localStorage
-  const postsWithUserInfo = posts.value.map(post => ({
-    ...post,
-    userId: post.userId || post.id,
-    username: post.username,
-    userAvatar: post.userAvatar
-  }))
-  localStorage.setItem('allPosts', JSON.stringify(postsWithUserInfo))
-
-  // 启动轮播图自动播放
-  startAutoPlay()
-})
-
-// 添加组件卸载时的清理函数
-onUnmounted(() => {
-  if (autoPlayTimer) {
-    clearInterval(autoPlayTimer)
-  }
-})
-
 // 修改点赞状态管理
 const likedPosts = ref(new Set())
 const postLikes = ref({})
 
 // 处理点赞
-const handleLike = async (post, event) => {
-  event.stopPropagation()
+const handleLike = async (post) => {
+  try {
+    if (!post.id) return
+    
+    // 检查登录状态
+    const token = localStorage.getItem('token')
+    if (!token) {
+      showToast('请先登录')
+      router.push('/login')
+      return
+    }
+
+    console.log('点赞前状态:', post)
+    
+    // 调用点赞接口
+    const response = await likePost(post.id)
+    console.log('点赞响应:', response)
+
+    // 点赞成功后重新获取最新的帖子数据
+    await fetchPosts()
+    showToast('点赞成功')
+  } catch (error) {
+    console.error('点赞失败:', error)
+    if (error.response?.status === 401) {
+      showToast('请先登录')
+      router.push('/login')
+    } else if (error.response?.status === 400) {
+      showToast('您已经点赞过了')
+    } else {
+      showToast(error.response?.data?.detail || '点赞失败')
+    }
+  }
+}
+
+// 处理取消点赞
+const handleUnlike = async (post) => {
+  try {
+    if (!post.id) return
+    
+    // 检查登录状态
+    const token = localStorage.getItem('token')
+    if (!token) {
+      showToast('请先登录')
+      router.push('/login')
+      return
+    }
+
+    console.log('取消点赞前状态:', post)
+    
+    // 调用取消点赞接口
+    const response = await unlikePost(post.id)
+    console.log('取消点赞响应:', response)
+
+    // 取消点赞成功后重新获取最新的帖子数据
+    await fetchPosts()
+    showToast('已取消点赞')
+  } catch (error) {
+    console.error('取消点赞失败:', error)
+    if (error.response?.status === 401) {
+      showToast('请先登录')
+      router.push('/login')
+    } else if (error.response?.status === 400) {
+      showToast('您还没有点赞')
+    } else {
+      showToast(error.response?.data?.detail || '取消点赞失败')
+    }
+  }
+}
+
+// 点赞按钮点击处理
+const handleLikeClick = async (event, post) => {
+  event.stopPropagation() // 阻止事件冒泡
   
   try {
-    const newState = likeStore.toggleLike(post.id)
-    // 更新当前帖子的点赞状态
-    const postIndex = posts.value.findIndex(p => p.id === post.id)
-    if (postIndex !== -1) {
-      posts.value[postIndex] = {
-        ...posts.value[postIndex],
-        likeCount: likeStore.getLikeCount(post.id),
-        isLiked: newState
-      }
+    if (post.isLiked) {
+      await handleUnlike(post)
+    } else {
+      await handleLike(post)
     }
   } catch (error) {
     console.error('点赞操作失败:', error)
-    showToast('操作失败，请重试')
   }
 }
 
 // 添加收藏状态监听
 watch(
-  () => posts.value,
+  () => postList.value,
   () => {
-    posts.value.forEach(post => {
+    postList.value.forEach(post => {
       if (!likeStore.getLikeCount(post.id)) {
         likeStore.setInitialLikes(post.id, post.likeCount || 0)
       }
@@ -264,6 +355,12 @@ watch(
   },
   { immediate: true }
 )
+
+// 在模板中添加图片错误处理
+const handleImageError = (e) => {
+  console.error('图片加载失败:', e.target.src)
+  e.target.src = 'src/assets/default-image.jpg'
+}
 </script>
 <template>
   <div class="home-page">
@@ -302,24 +399,29 @@ watch(
 
     <!-- 内容区域 -->
     <div class="content-grid">
-      <div v-for="post in posts" :key="post.id" class="post-card" @click="handlePostClick(post)">
-        <div class="post-image">
-          <img :src="post.images[0]" alt="" /> <!-- 展示第一张图片 -->
+      <div v-for="post in postList" :key="post.id" class="post-card">
+        <div class="post-content" @click="handlePostClick(post)">
+          <div class="post-image">
+            <img :src="post.images[0]" alt="" />
+          </div>
+          <div class="post-info">
+            <h3 class="post-username">{{ post.username }}</h3>
+            <p class="post-title">{{ post.title }}</p>
+          </div>
         </div>
-        <div class="post-info">
-          <h3 class="post-username">{{ post.username }}</h3>
-          <p class="post-title">{{ post.title }}</p>
-          <div class="post-actions">
-            <div class="like-btn" @click="handleLike(post, $event)">
-              <svg class="like-icon" :class="{ 'liked': likeStore.isPostLiked(post.id) }" viewBox="0 0 24 24" width="20"
-                height="20">
-                <path fill="currentColor"
-                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-              <span class="like-count" :class="{ 'liked': likeStore.isPostLiked(post.id) }">
-                {{ likeStore.getLikeCount(post.id) }}
-              </span>
-            </div>
+        
+        <div class="post-actions" @click.stop>
+          <div class="like-btn" @click="handleLikeClick($event, post)">
+            <svg class="like-icon" :class="{ 'liked': post.isLiked }" 
+                 viewBox="0 0 24 24" width="20" height="20">
+              <path :fill="post.isLiked ? 'currentColor' : 'none'"
+                    :stroke="post.isLiked ? 'none' : 'currentColor'"
+                    stroke-width="2"
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+            <span class="like-count" :class="{ 'liked': post.isLiked }">
+              {{ post.likeCount }}
+            </span>
           </div>
         </div>
       </div>
@@ -462,6 +564,7 @@ watch(
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
 .post-image {
@@ -596,6 +699,8 @@ watch(
   align-items: center;
   gap: 12px;
   margin-top: 8px;
+  position: relative;
+  z-index: 2; /* 确保点赞按钮在上层 */
 }
 
 .like-btn {
@@ -613,41 +718,63 @@ watch(
 }
 
 .like-icon {
-  color: #666;
+  width: 24px;
+  height: 24px;
   transition: all 0.3s ease;
+  color: #666;
 }
 
+/* 未点赞状态下的空心爱心 */
+.like-icon:not(.liked) path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+/* 点赞状态下的实心爱心 */
 .like-icon.liked {
   color: #FF69B4;
-  animation: heartPop 0.4s ease;
+  animation: heartPop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+.like-icon.liked path {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* 点赞数字样式 */
 .like-count {
   font-size: 14px;
   color: #666;
-  min-width: 20px;
+  margin-left: 4px;
 }
 
 .like-count.liked {
   color: #FF69B4;
+  animation: countPop 0.4s ease;
+}
+
+/* 悬浮效果 */
+.like-btn:hover .like-icon:not(.liked) {
+  color: #FF69B4;
+  opacity: 0.7;
 }
 
 @keyframes heartPop {
-  0% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  25% { transform: scale(1.2); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
 
-  25% {
-    transform: scale(1.2);
-  }
+@keyframes countPop {
+  0% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
 
-  50% {
-    transform: scale(0.95);
-  }
-
-  100% {
-    transform: scale(1);
-  }
+.post-content {
+  cursor: pointer;
 }
 </style>
 

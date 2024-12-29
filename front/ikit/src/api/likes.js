@@ -1,9 +1,9 @@
 import request from '@/utils/request'
 
-// 收藏帖子
-export function collectPost(postId) {
+// 点赞
+export function likePost(postId) {
   return request({
-    url: `/acg/collect/post/${postId}/`,
+    url: `/acg/like/post/${postId}/`,
     method: 'post',
     headers: {
       'Content-Type': 'application/json',
@@ -12,10 +12,10 @@ export function collectPost(postId) {
   })
 }
 
-// 取消收藏帖子
-export function uncollectPost(postId) {
+// 取消点赞
+export function unlikePost(postId) {
   return request({
-    url: `/acg/uncollect/post/${postId}`,
+    url: `/acg/unlike/post/${postId}/`,
     method: 'post',
     headers: {
       'Content-Type': 'application/json',
@@ -24,13 +24,10 @@ export function uncollectPost(postId) {
   })
 }
 
-// 获取收藏列表
-export function fetchCollectionList() {
+// 获取帖子点赞状态
+export function getPostLikeStatus(postId) {
   return request({
-    url: '/acg/collections/',
-    method: 'get',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    }
+    url: `/acg/like/post/${postId}/`,
+    method: 'get'
   })
 } 

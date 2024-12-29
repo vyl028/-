@@ -1,20 +1,27 @@
 import request from '@/utils/request'
 
+// 登录接口
 export const login = (data) => {
   return request({
-    url: 'http://127.0.0.1:8000/login/',
+    url: '/acg/login/',
     method: 'POST',
     data
   })
 }
 
-export function register(formData) {
+// 注册接口
+export const register = (data) => {
   return request({
-    url: '/api/user/register',
-    method: 'post',
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
-    data: formData
+    url: '/acg/register/',
+    method: 'POST',
+    data
+  })
+}
+
+// 获取用户信息
+export const getUserInfo = () => {
+  return request({
+    url: '/acg/profile/',
+    method: 'GET'
   })
 }

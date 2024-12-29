@@ -5,6 +5,12 @@ import { useFollowStore } from '../stores/follow'
 import { showToast } from 'vant'
 import { useLikeStore } from '../stores/like'
 import { useCollectionStore } from '../stores/collection'
+import { getDynamicDetail } from '@/api/posts'
+import { likePost } from '@/api/likes'
+import { collectPost, uncollectPost } from '@/api/collection'
+import { followUser, unfollowUser, getFollows } from '@/api/follows'
+
+import request from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -186,49 +192,55 @@ const showNextImage = () => {
 
 // 处理关注
 const handleFollow = async () => {
-  if (!dynamic.value?.userId) return
-  
   try {
-    if (isFollowing.value) {
-      await followStore.unfollowUser(dynamic.value.userId)
-      isFollowing.value = false
-    } else {
-      // 保存完整的用户信息
-      const userInfo = {
-        id: dynamic.value.userId,
-        name: dynamic.value.username,
-        avatar: dynamic.value.userAvatar
-      }
-      await followStore.followUser(dynamic.value.userId, userInfo)
+    // 使用 dynamic.value.userid 获取用户ID
+    const userId = dynamic.value?.authorid?.userid?.id
+    
+    if (!userId) {
+      console.error('用户ID不存在:', dynamic.value)
+      showToast('用户信息不完整')
+      return
+    }
+
+    if (!isFollowing.value) {
+      await followUser(userId)
       isFollowing.value = true
-    }
-    
-    // 更新 localStorage 中的关注状态
-    const followingUsers = JSON.parse(localStorage.getItem('followingUsers') || '[]')
-    if (isFollowing.value) {
-      // 添加关注
-      if (!followingUsers.some(user => user.id === dynamic.value.userId)) {
-        followingUsers.push({
-          id: dynamic.value.userId,
-          name: dynamic.value.username,
-          avatar: dynamic.value.userAvatar
-        })
-      }
+      showToast('关注成功')
     } else {
-      // 取消关注
-      const index = followingUsers.findIndex(user => user.id === dynamic.value.userId)
-      if (index > -1) {
-        followingUsers.splice(index, 1)
-      }
+      await unfollowUser(userId)
+      isFollowing.value = false
+      showToast('已取消关注')
     }
-    localStorage.setItem('followingUsers', JSON.stringify(followingUsers))
-    
-    showToast(isFollowing.value ? '关注成功' : '已取消关注')
   } catch (error) {
     console.error('关注操作失败:', error)
-    showToast('操作失败，请重试')
+    if (error.response?.status === 401) {
+      showToast('请先登录')
+      router.push('/login')
+    } else {
+      showToast(error.response?.data?.detail || '操作失败，请重试')
+    }
   }
 }
+
+// 检查关注状态
+const checkFollowStatus = async () => {
+  try {
+    const userId = dynamic.value?.authorid?.userid?.id
+    if (!userId) return
+
+    const response = await getFollows()
+    isFollowing.value = response.data.some(follow => follow.followed === userId)
+  } catch (error) {
+    console.error('获取关注状态失败:', error)
+  }
+}
+
+// 在获取动态详情后检查关注状态
+watch(() => dynamic.value?.authorid?.userid?.id, async (newUserId) => {
+  if (newUserId) {
+    await checkFollowStatus()
+  }
+}, { immediate: true })
 
 // 处理头像加载失败
 const handleAvatarError = (e) => {
@@ -252,21 +264,41 @@ const handleCommentLike = (comment) => {
 }
 
 // 修改提交评论的方法，添加点赞相关属性
-const submitComment = () => {
+const submitComment = async () => {
   if (!commentText.value.trim()) return
   
-  comments.value.push({
-    id: comments.value.length + 1,
-    userAvatar: '/src/assets/default-avatar.jpg',
-    username: '当前用户',
-    content: commentText.value,
-    time: '刚刚',
-    isLiked: false,
-    likeCount: 0
-  })
-  
-  commentText.value = ''
-  replyTo.value = null
+  try {
+    const response = await addComment({
+      postId: dynamic.value.id,
+      content: commentText.value,
+      replyTo: replyTo.value?.id
+    })
+    
+    // 添加新评论到列表
+    dynamic.value.comments.push({
+      id: response.id,
+      userAvatar: response.userAvatar,
+      username: response.username,
+      content: commentText.value,
+      time: '刚刚',
+      isLiked: false,
+      likeCount: 0
+    })
+    
+    commentText.value = ''
+    replyTo.value = null
+    dynamic.value.commentCount++
+    
+    showToast('评论成功')
+  } catch (error) {
+    console.error('评论失败:', error)
+    if (error.response?.status === 401) {
+      showToast('请先登录')
+      router.push('/login')
+    } else {
+      showToast(error.response?.data?.detail || '评论失败，请重试')
+    }
+  }
 }
 
 // 更新点赞处理函数
@@ -274,21 +306,25 @@ const handleLike = async () => {
   if (!dynamic.value?.id) return
   
   try {
-    const newState = likeStore.toggleLike(dynamic.value.id)
-    isLiked.value = newState
-    likeCount.value = likeStore.getLikeCount(dynamic.value.id)
+    await likePost(dynamic.value.id)
+    dynamic.value.isLiked = !dynamic.value.isLiked
+    dynamic.value.likeCount += dynamic.value.isLiked ? 1 : -1
     
-    // 更新 dynamic 中的状态
-    dynamic.value = {
-      ...dynamic.value,
-      isLiked: newState,
-      likeCount: likeCount.value
+    if (dynamic.value.isLiked) {
+      likeStore.like(dynamic.value.id)
+    } else {
+      likeStore.unlike(dynamic.value.id)
     }
     
-    showToast(newState ? '点赞成功' : '已取消点赞')
+    showToast(dynamic.value.isLiked ? '点赞成功' : '已取消点赞')
   } catch (error) {
     console.error('点赞操作失败:', error)
-    showToast('操作失败，请重试')
+    if (error.response?.status === 401) {
+      showToast('请先登录')
+      router.push('/login')
+    } else {
+      showToast(error.response?.data?.detail || '操作失败，请重试')
+    }
   }
 }
 
@@ -304,42 +340,31 @@ watch(
 )
 
 // 修改收藏处理函数
-const handleCollect = () => {
+const handleCollect = async () => {
   if (!dynamic.value?.id) return
   
   try {
-    // 保存完整的帖子信息
-    const postData = {
-      id: dynamic.value.id,
-      title: dynamic.value.title,
-      content: dynamic.value.content,
-      username: dynamic.value.username,
-      userAvatar: dynamic.value.userAvatar,
-      images: dynamic.value.images,
-      tags: dynamic.value.tags || [],
-      date: new Date().toLocaleDateString(), // 添加收藏日期
-      author: dynamic.value.username // 确保作者信息存在
+    if (dynamic.value.isCollected) {
+      await uncollectPost(dynamic.value.id)
+      dynamic.value.isCollected = false
+      dynamic.value.collectCount--
+      collectionStore.uncollect(dynamic.value.id)
+    } else {
+      await collectPost(dynamic.value.id)
+      dynamic.value.isCollected = true
+      dynamic.value.collectCount++
+      collectionStore.collect(dynamic.value.id)
     }
-
-    // 切换收藏状态
-    const newState = collectionStore.toggleCollection(postData)
-
-    // 更新状态
-    isCollected.value = newState
-    collectCount.value = collectionStore.getCollectionCount(dynamic.value.id)
-
-    // 同步更新 dynamic 中的状态
-    dynamic.value = {
-      ...dynamic.value,
-      isCollected: newState,
-      collectCount: collectCount.value
-    }
-
-    // 显示提示
-    showToast(newState ? '收藏成功' : '已取消收藏')
+    
+    showToast(dynamic.value.isCollected ? '收藏成功' : '已取消收藏')
   } catch (error) {
     console.error('收藏操作失败:', error)
-    showToast('操作失败，请重试')
+    if (error.response?.status === 401) {
+      showToast('请先登录')
+      router.push('/login')
+    } else {
+      showToast(error.response?.data?.detail || '操作失败，请重试')
+    }
   }
 }
 
@@ -363,95 +388,77 @@ const handleInputFocus = () => {
   // 这里可以添加聚焦时的逻辑
 }
 
-// 在获取动态详情时初始化收藏数
+// 获取动态详情
 const fetchDynamicDetail = async () => {
   try {
-    const response = await getDynamicDetail(route.params.id)
-    dynamic.value = response
-    // 从 likeStore 获取点赞状态和数量
-    isLiked.value = likeStore.isPostLiked(response.id)
-    likeCount.value = likeStore.getLikeCount(response.id)
-    // ... 其他初始化代码
+    const response = await request({
+      url: `/acg/post/${route.params.id}/`,
+      method: 'get',
+      headers: localStorage.getItem('token') ? {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      } : {}  // 未登录时不带 token
+    })
+    
+    // 检查响应数据
+    const data = response.data || response
+    
+    if (!data) {
+      throw new Error('未获取到动态数据')
+    }
+    
+    // 根据接口文档处理数据
+    dynamic.value = {
+      id: data.id,
+      userId: data.userid,
+      username: data.username,
+      nickname: data.nickname,
+      userAvatar: data.avatar,
+      userDescription: data.description,
+      title: data.posttitle,
+      content: data.postcontent,
+      createdTime: data.postcreated_time,
+      // 处理字符串数组
+      images: typeof data.postimages === 'string' 
+        ? JSON.parse(data.postimages.replace(/'/g, '"')) 
+        : data.postimages || [],
+      tags: typeof data.posttags === 'string'
+        ? JSON.parse(data.posttags.replace(/'/g, '"'))
+        : data.posttags || [],
+      likeCount: data.like_count || 0,
+      collectCount: data.collect_count || 0,
+      commentCount: data.comment_count || 0,
+      isLiked: data.is_like || false,
+      isCollected: data.is_collect || false
+    }
+    
+    // 更新收藏和点赞状态到 store
+    if (collectionStore) {
+      isCollected.value = dynamic.value.isCollected
+      collectCount.value = dynamic.value.collectCount
+    }
+    
+    if (likeStore) {
+      isLiked.value = dynamic.value.isLiked
+      likeCount.value = dynamic.value.likeCount
+    }
+    
   } catch (error) {
     console.error('获取动态详情失败:', error)
     showToast('获取详情失败')
   }
 }
 
-// 监听点赞状态变化
-watch(() => likeStore.getLikeCount(route.params.id), (newCount) => {
-  if (dynamic.value?.id) {
-    likeCount.value = newCount
-    // 同时更新点赞状态
-    isLiked.value = likeStore.isPostLiked(dynamic.value.id)
-  }
-})
-
-// 监听收藏状态变化
-watch(() => collectionStore.getCollectionCount(route.params.id), (newCount) => {
-  if (dynamic.value?.id) {
-    collectCount.value = newCount
-    isCollected.value = collectionStore.isPostCollected(dynamic.value.id)
-  }
-})
-
-// 添加事件监听
+// 确保在组件挂载时调用
 onMounted(() => {
-  // ... 其他代码 ...
-  
-  // 确保从 store 获取最新的收藏状态
-  if (dynamic.value?.id) {
-    const postId = dynamic.value.id
-    const storeCollectCount = collectionStore.getCollectionCount(postId)
-    collectCount.value = storeCollectCount
-    isCollected.value = collectionStore.isPostCollected(postId)
-
-    // 更新 dynamic 中的收藏状态
-    dynamic.value = {
-      ...dynamic.value,
-      isCollected: isCollected.value,
-      collectCount: storeCollectCount
-    }
+  if (route.params.id) {
+    fetchDynamicDetail()
   }
 })
 
-// 添加收藏状态监听
-watch(
-  () => dynamic.value?.id,
-  (newId) => {
-    if (newId) {
-      const storeCollectCount = collectionStore.getCollectionCount(newId)
-      collectCount.value = storeCollectCount
-      isCollected.value = collectionStore.isPostCollected(newId)
-
-      // 更新 dynamic 中的收藏状态
-      if (dynamic.value) {
-        dynamic.value = {
-          ...dynamic.value,
-          isCollected: isCollected.value,
-          collectCount: storeCollectCount
-        }
-      }
-    }
-  }
-)
-
-// 监听动态内容变化
-watch(
-  () => dynamic.value?.id,
-  (newId) => {
-    if (newId) {
-      updateCollectionState(newId)
-    }
-  },
-  { immediate: true }
-)
-
-// 在组件挂载时检查关注状态
-onMounted(() => {
-  if (dynamic.value?.userId) {
-    const followingUsers = JSON.parse(localStorage.getItem('followingUsers') || '[]')
-    isFollowing.value = followingUsers.some(user => user.id === dynamic.value.userId)
+// 监听路由变化
+watch(() => route.params.id, (newId) => {
+  if (newId) {
+    fetchDynamicDetail()
   }
 })
 </script>
@@ -466,7 +473,11 @@ onMounted(() => {
         <span class="username">{{ dynamic.username }}</span>
       </div>
       <div class="action-buttons">
-        <button class="follow-btn" @click="handleFollow">
+        <button 
+          class="follow-btn" 
+          :class="{ 'following': isFollowing }"
+          @click="handleFollow"
+        >
           {{ isFollowing ? '已关注' : '+ 关注' }}
         </button>
 
@@ -626,30 +637,25 @@ onMounted(() => {
 .follow-btn {
   padding: 6px 16px;
   border-radius: 20px;
-  border: none;
-  background-color: rgba(255, 105, 180, 0.8);
-  color: white;
   font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(2px);
+  border: 1px solid #FF69B4;
+  background-color: #FF69B4;
+  color: white;
+}
+
+.follow-btn.following {
+  background-color: white;
+  color: #FF69B4;
 }
 
 .follow-btn:hover {
-  background-color: rgba(255, 20, 147, 0.9);
+  opacity: 0.8;
 }
 
 .follow-btn:active {
   transform: scale(0.95);
-}
-
-
-
-/* 已关注状态的样式 */
-.follow-btn.following {
-  background-color: #eee;
-  color: #666;
 }
 
 .image-gallery {
