@@ -145,7 +145,12 @@ const router = createRouter({
       path: '/search',
       name: 'Search',
       component: () => import('../views/SearchResultView.vue')
-    }
+    },
+    {
+      path: '/private/:id', 
+      name: 'privateMessageDetail',
+      component: () => import('../views/PrivateMessageDetail.vue'),
+    },
   ]
 })
 
