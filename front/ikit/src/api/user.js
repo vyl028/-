@@ -1,20 +1,28 @@
+// src/api/user.js
 import request from '@/utils/request'
 
+// 登录接口
 export const login = (data) => {
+  console.log('发送登录请求:', data)  // 添加日志
   return request({
-    url: 'http://127.0.0.1:8000/login/',
+    url: '/login/',  // 注意这里的路径
     method: 'POST',
-    data
+    data: {
+      username: data.username,
+      password: data.password
+    }
   })
 }
 
-export function register(formData) {
+// 注册接口
+export const register = (data) => {
+  console.log('发送注册请求:', data)  // 添加日志
   return request({
-    url: '/api/user/register',
-    method: 'post',
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
-    data: formData
+    url: '/register/',
+    method: 'POST',
+    data: {
+      username: data.username,
+      password: data.password
+    }
   })
 }

@@ -22,6 +22,12 @@ const userArticles = ref([
   }
 ])
 
+const handleLogout = () => {
+  userStore.logout()
+  showToast('已退出登录')
+  router.push('/login')
+}
+
 const chooseAvatar = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -101,7 +107,7 @@ const handleMoreArticles = () => {
           </div>
         </div>
         <span class="username">{{ userInfo.username || '千早爱音' }}</span>
-        <span class="settings-icon">⚙️</span>
+        <button class="logout-btn" @click="handleLogout">退出登录</button>
       </div>
 
       <div class="stats-section">
@@ -204,7 +210,26 @@ const handleMoreArticles = () => {
   margin-right: 12px;
 }
 
-.avatar,
+.logout-btn {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  margin-left: auto; /* 使按钮靠右对齐 */
+}
+
+.logout-btn:hover {
+  background: #f5f5f5;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .avatar-placeholder {
   width: 100%;
   height: 100%;
