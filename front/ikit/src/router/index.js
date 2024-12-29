@@ -25,7 +25,7 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: false }
     },
     {
       path: '/plaza',
@@ -78,7 +78,7 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: true }
     },
     {
       path: '/article/:id',
@@ -105,12 +105,14 @@ const router = createRouter({
     {
       path: '/article/edit',
       name: 'ArticleEdit',
-      component: () => import('@/views/ArticleEditView.vue')
+      component: () => import('@/views/ArticleEditView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/post/edit',
       name: 'PostEdit',
-      component: () => import('@/views/PostEditView.vue')
+      component: () => import('@/views/PostEditView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/post/:id',
@@ -167,10 +169,10 @@ router.beforeEach((to, from, next) => {
   }
 
   // 已登录用户访问登录/注册页面时，暂时允许访问
-  // if (token && (to.path === '/login' || to.path === '/register')) {
-  //   next('/home')
-  //   return
-  // }
+   if (token && (to.path === '/login' || to.path === '/register')) {
+     next('/home')
+     return
+   }
 
   next()
 })
