@@ -128,7 +128,7 @@ const router = createRouter({
       path: '/collection',
       name: 'Collection',
       component: CollectionView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, hideBottomNav: true }
     },
     {
       path: '/fans',

@@ -1,10 +1,14 @@
 <script setup>
-import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue'
+import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import CommonTabs from '@/components/CommonTabs.vue'  // 添加这行
+import CommonTabs from '@/components/CommonTabs.vue'
+import { useLikeStore } from '../stores/like'
+import { useCollectionStore } from '../stores/collection'
 
 const router = useRouter()
 const route = useRoute()
+const likeStore = useLikeStore()
+const collectionStore = useCollectionStore()
 
 // 定义分类导航数据
 const navItems = [
@@ -19,14 +23,14 @@ const getCategoryPosts = (category) => {
   console.log('当前分类:', category)
   switch (category) {
     case 'yuanshen':
-      return allPosts.value.filter(post => post.tags.includes('原神'))
+      return posts.value.filter(post => post.tags.includes('原神'))
     case 'chuyin':
-      return allPosts.value.filter(post => post.tags.includes('初音未来'))
+      return posts.value.filter(post => post.tags.includes('初音未来'))
     case 'kimetsu':
-      return allPosts.value.filter(post => post.tags.includes('鬼灭之刃'))
+      return posts.value.filter(post => post.tags.includes('鬼灭之刃'))
     case 'home':
     default:
-      return allPosts.value // 推荐页面显示所有帖子
+      return posts.value // 推荐页面显示所有帖子
   }
 }
 
@@ -107,21 +111,33 @@ const handleAvatarError = (e) => {
   e.target.src = '/src/assets/default-avatar.jpg'
 }
 
-// 处理帖子点击
+// 处理帖子点击，传递完整的帖子信息
 const handlePostClick = (post) => {
+  // 确保获取最新的点赞和收藏状态
+  const currentLikeCount = likeStore.getLikeCount(post.id) || 0
+  const currentIsLiked = likeStore.isPostLiked(post.id)
+  const currentCollectCount = collectionStore.getCollectionCount(post.id) || 0
+  const currentIsCollected = collectionStore.isPostCollected(post.id)
+
+  const updatedPost = {
+    ...post,
+    userId: post.userId || post.id,
+    likeCount: currentLikeCount,
+    isLiked: currentIsLiked,
+    collectCount: currentCollectCount,
+    isCollected: currentIsCollected
+  }
+
+  // 更新本地状态
+  const postIndex = posts.value.findIndex(p => p.id === post.id)
+  if (postIndex !== -1) {
+    posts.value[postIndex] = updatedPost
+  }
+
   router.push({
     name: 'DynamicDetail',
-    params: { 
-      id: post.id.toString()
-    },
-    state: { 
-      post: {
-        ...post,
-        userId: post.userId || post.id,  // 确保有 userId
-        username: post.username,
-        userAvatar: post.userAvatar
-      }
-    }
+    params: { id: post.id.toString() },
+    state: { post: updatedPost }
   })
 }
 
@@ -133,37 +149,59 @@ const banners = ref([
 ])
 
 const currentBanner = ref(0)
+let autoPlayTimer = null  // 添加定时器变量
 
 // 自动轮播
 const startAutoPlay = () => {
-  setInterval(() => {
+  autoPlayTimer = setInterval(() => {
     currentBanner.value = (currentBanner.value + 1) % banners.value.length
   }, 3000)
 }
 
-// 保存所有帖子的原始数据
-const allPosts = ref([...posts.value])
+// 存储所有帖子的原始数据
+const allPosts = ref([])
 
-// 监听路由变化
-watch(() => route.path, (newPath) => {
-  const category = newPath.split('/').pop()
-  console.log('路由变化:', category)
-  posts.value = getCategoryPosts(category)
+// 用于显示的帖子列表
+const displayPosts = ref([])
+
+// 处理帖子数据的计算属性
+const processedPosts = computed(() => {
+  return posts.value.map(post => ({
+    ...post,
+    likeCount: likeStore.getLikeCount(post.id),
+    isLiked: likeStore.isPostLiked(post.id),
+    collectCount: collectionStore.getCollectionCount(post.id),
+    isCollected: collectionStore.isPostCollected(post.id)
+  }))
 })
+
+// 监听收藏状态变化
+watch(
+  () => collectionStore.collections,
+  () => {
+    // 更新所有帖子的收藏状态
+    posts.value = posts.value.map(post => ({
+      ...post,
+      collectCount: collectionStore.getCollectionCount(post.id),
+      isCollected: collectionStore.isPostCollected(post.id)
+    }))
+  }
+)
 
 // 在组件挂载时初始化数据
 onMounted(() => {
-  // 保存原始数据
-  allPosts.value = [...posts.value]
-
   // 根据当前路由设置初始内容
   const category = route.path.split('/').pop()
-  console.log('组件挂载:', category)
   posts.value = getCategoryPosts(category)
 
-  // 为每个帖子设置初始点赞数
+  // 初始化每个帖子的点赞和收藏数据
   posts.value.forEach(post => {
-    postLikes.value[post.id] = post.likes || Math.floor(Math.random() * 1000)
+    if (typeof likeStore.getLikeCount(post.id) === 'undefined') {
+      likeStore.setInitialLikes(post.id, 0)
+    }
+    if (typeof collectionStore.getCollectionCount(post.id) === 'undefined') {
+      collectionStore.setInitialCollections(post.id, 0)
+    }
   })
 
   // 保存帖子数据到 localStorage
@@ -179,26 +217,54 @@ onMounted(() => {
   startAutoPlay()
 })
 
-// 添加点赞状态管理
+// 添加组件卸载时的清理函数
+onUnmounted(() => {
+  if (autoPlayTimer) {
+    clearInterval(autoPlayTimer)
+  }
+})
+
+// 修改点赞状态管理
 const likedPosts = ref(new Set())
-const postLikes = ref({}) // 存储每个帖子的点赞数
+const postLikes = ref({})
 
 // 处理点赞
-const handleLike = (post, event) => {
-  event.stopPropagation() // 阻止冒泡,避免触发帖子点击
-
-  const isLiked = likedPosts.value.has(post.id)
-  if (isLiked) {
-    likedPosts.value.delete(post.id)
-    postLikes.value[post.id]--
-  } else {
-    likedPosts.value.add(post.id)
-    postLikes.value[post.id]++
+const handleLike = async (post, event) => {
+  event.stopPropagation()
+  
+  try {
+    const newState = likeStore.toggleLike(post.id)
+    // 更新当前帖子的点赞状态
+    const postIndex = posts.value.findIndex(p => p.id === post.id)
+    if (postIndex !== -1) {
+      posts.value[postIndex] = {
+        ...posts.value[postIndex],
+        likeCount: likeStore.getLikeCount(post.id),
+        isLiked: newState
+      }
+    }
+  } catch (error) {
+    console.error('点赞操作失败:', error)
+    showToast('操作失败，请重试')
   }
 }
 
+// 添加收藏状态监听
+watch(
+  () => posts.value,
+  () => {
+    posts.value.forEach(post => {
+      if (!likeStore.getLikeCount(post.id)) {
+        likeStore.setInitialLikes(post.id, post.likeCount || 0)
+      }
+      if (!collectionStore.getCollectionCount(post.id)) {
+        collectionStore.setInitialCollections(post.id, post.collectCount || 0)
+      }
+    })
+  },
+  { immediate: true }
+)
 </script>
-
 <template>
   <div class="home-page">
     <div class="top-section">
@@ -245,13 +311,13 @@ const handleLike = (post, event) => {
           <p class="post-title">{{ post.title }}</p>
           <div class="post-actions">
             <div class="like-btn" @click="handleLike(post, $event)">
-              <svg class="like-icon" :class="{ 'liked': likedPosts.has(post.id) }" viewBox="0 0 24 24" width="20"
+              <svg class="like-icon" :class="{ 'liked': likeStore.isPostLiked(post.id) }" viewBox="0 0 24 24" width="20"
                 height="20">
                 <path fill="currentColor"
                   d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
-              <span class="like-count" :class="{ 'liked': likedPosts.has(post.id) }">
-                {{ postLikes[post.id] }}
+              <span class="like-count" :class="{ 'liked': likeStore.isPostLiked(post.id) }">
+                {{ likeStore.getLikeCount(post.id) }}
               </span>
             </div>
           </div>
@@ -584,3 +650,4 @@ const handleLike = (post, event) => {
   }
 }
 </style>
+

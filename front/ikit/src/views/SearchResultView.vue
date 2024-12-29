@@ -1,9 +1,10 @@
 <template>
   <div class="search-result">
     <div class="header">
-      <div class="back-icon" @click="router.back()">←</div>
+      <div class="back-icon" @click="router.back()" tabindex="-1">←</div>
       <div class="search-box">
         <input 
+          ref="searchInput"
           v-model="searchText" 
           type="text" 
           placeholder="搜索关键词"
@@ -51,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSearchStore } from '../stores/search'
 
@@ -59,9 +60,20 @@ const router = useRouter()
 const searchStore = useSearchStore()
 const searchText = ref('')
 const error = ref('')
+const searchInput = ref(null)
+
+// 添加监听器来观察状态变化
+watch(() => searchStore.searchResults, (newResults) => {
+  console.log('搜索结果变化:', newResults)
+}, { deep: true })
+
+watch(() => searchText.value, (newText) => {
+  console.log('搜索文本变化:', newText)
+})
 
 // 修改搜索处理函数
 const handleSearch = () => {
+  console.log('执行搜索，当前搜索文本:', searchText.value)
   error.value = ''
   try {
     if (searchText.value.trim()) {
@@ -69,12 +81,13 @@ const handleSearch = () => {
     }
   } catch (e) {
     error.value = '搜索出错，请重试'
-    console.error(e)
+    console.error('搜索错误:', e)
   }
 }
 
 // 处理结果点击
 const handleItemClick = (item) => {
+  console.log('点击搜索结果项:', item)
   if (!item.type) {
     console.warn('Item type is missing:', item)
     return
@@ -90,14 +103,7 @@ const handleItemClick = (item) => {
     case 'post':
       router.push({
         path: `/post/${item.id}`,
-        state: { 
-          post: {
-            ...item,
-            userId: item.userId || item.id,
-            username: item.username,
-            userAvatar: item.userAvatar
-          }
-        }
+        state: { post: item }
       })
       break
     default:
@@ -105,17 +111,29 @@ const handleItemClick = (item) => {
   }
 }
 
-// 添加组件挂载和卸载时的处理
 onMounted(() => {
-  // 组件挂载时清空搜索结果
-  searchStore.clearResults()
-  searchText.value = ''
-  error.value = ''
+  console.log('SearchResultView mounted')
+  console.log('上次搜索文本:', searchStore.lastSearchText)
+  console.log('当前搜索结果:', searchStore.searchResults)
+  
+  if (searchStore.lastSearchText) {
+    searchText.value = searchStore.lastSearchText
+    console.log('恢复搜索文本:', searchText.value)
+    if (searchStore.searchResults.length === 0) {
+      console.log('无搜索结果，重新执行搜索')
+      handleSearch()
+    }
+  }
+  searchInput.value?.focus()
 })
 
 onUnmounted(() => {
-  // 组件卸载时清空搜索结果
-  searchStore.clearResults()
+  console.log('SearchResultView unmounted')
+  console.log('卸载时的搜索状态:', {
+    searchText: searchText.value,
+    results: searchStore.searchResults,
+    lastSearchText: searchStore.lastSearchText
+  })
 })
 </script>
 
