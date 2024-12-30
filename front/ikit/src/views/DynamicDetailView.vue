@@ -5,6 +5,7 @@ import { useFollowStore } from '../stores/follow'
 import { showToast } from 'vant'
 import { useLikeStore } from '../stores/like'
 import { useCollectionStore } from '../stores/collection'
+import { getPosts } from '@/api/posts'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,64 +20,7 @@ const dynamic = ref({
   comments: [] // 初始化空数组
 })
 
-// 模拟数据库中的帖子数据
-const mockPosts = [
-  {
-    id: 1,
-    userId: 1,
-    username: '动漫迷小杰',
-    userAvatar: '/src/assets/avatar1.jpg',
-    title: '今天终于收到了期待已久的《鬼灭之刃》..',
-    content: '今天终于收到了期待已久的《鬼灭之刃》炭治郎手办，拆开包装的那一刻真是惊艳到了！手办的细节处理得非常到位，从服装的褶皱到武器的质感都栩栩如生。炭治郎的表情也刻画得十分传神，仿佛能感受到他的决心和勇气。这次入������������是太值了！',
-    images: ['/src/assets/post1.png'],
-    tags: ['手办', '鬼灭之刃', '开箱'],
-    commentCount: 23
-  },
-  {
-    id: 2,
-    userId: 2,
-    username: '手办达人莉莉',
-    userAvatar: '/src/assets/avatar2.jpg',
-    title: '手办修复记录',
-    content: '最近我尝试了一下手办修复，效果非常不错！主要是针对一些年代久远、有些磨损的手办进行了处理。通过打磨、上色等步骤，让这些手办重新焕发出了新的光彩。',
-    images: ['/src/assets/post2.png','/src/assets/post2-2.png'],
-    tags: ['手办修复', '技术分享'],
-    commentCount: 15
-  },
-  {
-    id: 3,
-    userId: 3,
-    username: '小轩',
-    userAvatar: '/src/assets/avatar3.jpg',
-    title: '手办摄影作品分享',
-    content: '最近参加了一场手办摄影大赛，今天来分享一下我的作品吧！我选择了几个我最喜欢的手办进行拍摄，通过不同的角度和光线来展现它们的美。拍摄过程虽然有些辛苦，但看到成品后觉得一切都值得了。这些照片不仅记录下了手办的美好瞬间，也记录下了我对二次元文化的热爱和执着。',
-    images: ['/src/assets/post3.png','/src/assets/post3-2.png','/src/assets/post3-3.png'],
-    tags: ['手办摄影', '作品分享'],
-    commentCount: 45
-  },
-  {
-    id: 4,
-    userId: 4,
-    username: '游戏宅小明',
-    userAvatar: '/src/assets/avatar4.jpg',
-    title: '原神角色展示',
-    content: '胡桃太米了，狠狠吃了附属。这款手办完美还原了游戏中的角色形象和魅力，无论是服装还是表情都栩栩如生。手办的质量和细节处理非常出色，让我感受到了制作团队的用心和热情。这次开箱真是让我大饱眼福！',
-    images: ['/src/assets/post4.png'],
-    tags: ['原神', '胡桃'],
-    commentCount: 67
-  },
-   {
-    id: 5,
-    userId: 5,
-    username: '小雪',
-    userAvatar: '/src/assets/avatar4.jpg',
-    title: '人活着就是为了初音未来！',
-    content: '人活着就是为了初音未来！人活着就是为了���音未来！��活着就是为了初音未来！谁还没有初音妹妹我不说',
-    images: ['/src/assets/post5.png'],
-    tags: ['初音未来', '手办'],
-    commentCount: 67
-  }
-]
+
 
 const followStore = useFollowStore()
 const likeStore = useLikeStore()
@@ -121,16 +65,47 @@ onMounted(async () => {
       collectCount.value = collectionStore.getCollectionCount(postId)
       isCollected.value = collectionStore.isPostCollected(postId)
     } else {
-      // 从 mockPosts 获取数据
-      const post = mockPosts.find(p => p.id.toString() === postId)
+      // 从后端获取所有帖子数据
+      const response = await getPosts()
+      const post = response.data.find(p => p.id.toString() === postId)
+      
       if (post) {
+        // 处理图片和标签数据
+        let images = []
+        try {
+          const imagesStr = post.postimages.replace(/'/g, '"')
+          images = JSON.parse(imagesStr)
+        } catch (e) {
+          console.error('解析图片数组失败:', e)
+          images = []
+        }
+
+        let tags = []
+        try {
+          const tagsStr = post.posttags.replace(/'/g, '"')
+          tags = JSON.parse(tagsStr)
+        } catch (e) {
+          console.error('解析标签数组失败:', e)
+          tags = []
+        }
+
+        // 构造处理后的帖子数据
         dynamic.value = {
-          ...post,
+          id: post.id,
+          username: post.username,
+          userAvatar: post.avatar || '/src/assets/default-avatar.jpg',
+          title: post.posttitle,
+          content: post.postcontent,
+          images: images,
+          tags: tags,
+          commentCount: post.comment_count,
           likeCount: likeStore.getLikeCount(post.id),
           isLiked: likeStore.isPostLiked(post.id),
           collectCount: collectionStore.getCollectionCount(post.id),
-          isCollected: collectionStore.isPostCollected(post.id)
+          isCollected: collectionStore.isPostCollected(post.id),
+          userId: post.userid
         }
+
         // 同步状态
         likeCount.value = likeStore.getLikeCount(post.id)
         isLiked.value = likeStore.isPostLiked(post.id)

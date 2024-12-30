@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import CommonTabs from '@/components/CommonTabs.vue'
 import { useLikeStore } from '../stores/like'
 import { useCollectionStore } from '../stores/collection'
+import { getPosts, getCategoryPosts } from '@/api/posts'
 
 const router = useRouter()
 const route = useRoute()
@@ -18,35 +19,144 @@ const navItems = [
   { text: '鬼灭之刃', path: '/discover/kimetsu' }
 ]
 
-// 根据分类获取对应的帖子数据
-const getCategoryPosts = (category) => {
-  console.log('当前分类:', category)
-  switch (category) {
-    case 'yuanshen':
-      return posts.value.filter(post => post.tags.includes('原神'))
-    case 'chuyin':
-      return posts.value.filter(post => post.tags.includes('初音未来'))
-    case 'kimetsu':
-      return posts.value.filter(post => post.tags.includes('鬼灭之刃'))
-    case 'home':
-    default:
-      return posts.value // 推荐页面显示所有帖子
+// 修改获取帖子的方法
+const fetchPosts = async () => {
+  try {
+    const response = await getPosts()
+    console.log('后端返回的原始数据:', response.data)
+    
+    posts.value = response.data.map(post => {
+      console.log('处理前的单个帖子数据:', post)
+      
+      // 处理 postimages 字符串
+      let images = []
+      try {
+        console.log('原始 postimages 字符串:', post.postimages)
+        const imagesStr = post.postimages.replace(/'/g, '"')
+        console.log('处理后的 postimages 字符串:', imagesStr)
+        images = JSON.parse(imagesStr)
+        console.log('解析后的图片数组:', images)
+      } catch (e) {
+        console.error('解析图片数组失败:', e)
+        images = []
+      }
+
+      // 处理 posttags 字符串
+      let tags = []
+      try {
+        console.log('原始 posttags 字符串:', post.posttags)
+        const tagsStr = post.posttags.replace(/'/g, '"')
+        console.log('处理后的 posttags 字符串:', tagsStr)
+        tags = JSON.parse(tagsStr)
+        console.log('解析后的标签数组:', tags)
+      } catch (e) {
+        console.error('解析标签数组失败:', e)
+        tags = []
+      }
+
+      const processedPost = {
+        id: post.id,
+        username: post.username,
+        userAvatar: post.avatar || '/src/assets/default-avatar.jpg',
+        title: post.posttitle,
+        content: post.postcontent,
+        images: images,
+        tags: tags,
+        commentCount: post.comment_count,
+        likeCount: post.like_count,
+        collectCount: post.collect_count,
+        isLiked: post.is_like,
+        isCollected: post.is_collect,
+        userId: post.userid
+      }
+      
+      console.log('处理后的帖子数据:', processedPost)
+      return processedPost
+    })
+
+    console.log('最终处理完的所有帖子数据:', posts.value)
+
+    // 初始化点赞和收藏状态
+    posts.value.forEach(post => {
+      if (typeof likeStore.getLikeCount(post.id) === 'undefined') {
+        likeStore.setInitialLikes(post.id, post.likeCount)
+      }
+      if (typeof collectionStore.getCollectionCount(post.id) === 'undefined') {
+        collectionStore.setInitialCollections(post.id, post.collectCount)
+      }
+    })
+  } catch (error) {
+    console.error('获取帖子列表失败:', error)
+    console.error('错误详情:', error.response?.data)
   }
 }
 
-// 添加导航方法
-const handleNavigation = (path) => {
-  router.push(path)
-}
-
-
-// 处理导航点击
-const handleNavigationtiezi = (path) => {
+// 修改分类获取方法
+const handleNavigation = async (path) => {
   const category = path.split('/').pop()
-  console.log('点击分类:', category)
-  posts.value = getCategoryPosts(category)
-  router.push(path)
+  console.log('当前选择的分类:', category)
+  
+  try {
+    // 获取所有帖子
+    const response = await getPosts()
+    const allPosts = response.data.map(post => {
+      let tags = []
+      try {
+        const tagsStr = post.posttags.replace(/'/g, '"')
+        tags = JSON.parse(tagsStr)
+      } catch (e) {
+        console.error('解析标签数组失败:', e)
+        tags = []
+      }
+
+      let images = []
+      try {
+        const imagesStr = post.postimages.replace(/'/g, '"')
+        images = JSON.parse(imagesStr)
+      } catch (e) {
+        console.error('解析图片数组失败:', e)
+        images = []
+      }
+
+      return {
+        id: post.id,
+        username: post.username,
+        userAvatar: post.avatar || '/src/assets/default-avatar.jpg',
+        title: post.posttitle,
+        content: post.postcontent,
+        images: images,
+        tags: tags,
+        commentCount: post.comment_count,
+        likeCount: post.like_count,
+        collectCount: post.collect_count,
+        isLiked: post.is_like,
+        isCollected: post.is_collect,
+        userId: post.userid
+      }
+    })
+
+    // 根据分类筛选帖子
+    if (category === 'home') {
+      posts.value = allPosts
+    } else {
+      const categoryMap = {
+        'yuanshen': '原神',
+        'chuyin': '初音未来',
+        'kimetsu': '鬼灭之刃'
+      }
+      
+      const targetTag = categoryMap[category]
+      posts.value = allPosts.filter(post => 
+        post.tags && post.tags.includes(targetTag)
+      )
+    }
+
+    router.push(path)
+  } catch (error) {
+    console.error('获取帖子失败:', error)
+  }
 }
+
 
 // 添加帖子数据(动态数据)
 const posts = ref([
@@ -188,32 +298,9 @@ watch(
   }
 )
 
-// 在组件挂载时初始化数据
-onMounted(() => {
-  // 根据当前路由设置初始内容
-  const category = route.path.split('/').pop()
-  posts.value = getCategoryPosts(category)
-
-  // 初始化每个帖子的点赞和收藏数据
-  posts.value.forEach(post => {
-    if (typeof likeStore.getLikeCount(post.id) === 'undefined') {
-      likeStore.setInitialLikes(post.id, 0)
-    }
-    if (typeof collectionStore.getCollectionCount(post.id) === 'undefined') {
-      collectionStore.setInitialCollections(post.id, 0)
-    }
-  })
-
-  // 保存帖子数据到 localStorage
-  const postsWithUserInfo = posts.value.map(post => ({
-    ...post,
-    userId: post.userId || post.id,
-    username: post.username,
-    userAvatar: post.userAvatar
-  }))
-  localStorage.setItem('allPosts', JSON.stringify(postsWithUserInfo))
-
-  // 启动轮播图自动播放
+// 在组件挂载时获取数据
+onMounted(async () => {
+  await fetchPosts()
   startAutoPlay()
 })
 

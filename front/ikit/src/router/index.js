@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-// import { useUserStore } from '@/stores/user'  // 暂时注释掉
-// import { showToast } from 'vant'  // 暂时注释掉
+import { useUserStore } from '@/stores/user'  // 取消注释
+import { showToast } from 'vant'  // 取消注释
 import CollectionView from '@/views/CollectionView.vue'
 import { useFollowStore } from '@/stores/follow'
 
@@ -25,7 +25,7 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: false }
     },
     {
       path: '/plaza',
@@ -75,16 +75,10 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/post',
-      name: 'post',
-      component: () => import('../views/PostView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: true }
     },
     {
       path: '/article/:id',
@@ -111,12 +105,14 @@ const router = createRouter({
     {
       path: '/article/edit',
       name: 'ArticleEdit',
-      component: () => import('@/views/ArticleEditView.vue')
+      component: () => import('@/views/ArticleEditView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/post/edit',
       name: 'PostEdit',
-      component: () => import('@/views/PostEditView.vue')
+      component: () => import('@/views/PostEditView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/post/:id',
@@ -154,13 +150,31 @@ const router = createRouter({
   ]
 })
 
+// 修改路由守卫
 router.beforeEach((to, from, next) => {
-  next();
-})
+  const token = localStorage.getItem('token')
+  
+  // 调试日志
+  console.log('路由跳转:', {
+    to: to.path,
+    from: from.path,
+    hasToken: !!token
+  })
 
-router.afterEach(() => {
-  const followStore = useFollowStore();
-  localStorage.setItem('followedUsers', JSON.stringify(followStore.followedUsers.value));
+  // 需要登录的页面但没有 token
+  if (to.meta.requiresAuth && !token) {
+    showToast('请先登录')
+    next('/login')
+    return
+  }
+
+  // 已登录用户访问登录/注册页面时，暂时允许访问
+   if (token && (to.path === '/login' || to.path === '/register')) {
+     next('/home')
+     return
+   }
+
+  next()
 })
 
 export default router
