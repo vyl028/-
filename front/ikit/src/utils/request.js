@@ -1,3 +1,4 @@
+// src/utils/request.js
 import axios from 'axios'
 import { showToast } from 'vant'
 
@@ -16,7 +17,7 @@ request.interceptors.request.use(
       headers: config.headers
     })
     
-    // 从 localStorage 获取 token
+    // 添加认证头
     const token = localStorage.getItem('token')
     if (token) {
       config.headers['Authorization'] = `JWT ${token}`
@@ -64,5 +65,30 @@ request.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+const service = axios.create({
+  baseURL: '/acg/api',  // 确保这里的前缀与后端 URL 匹配
+  timeout: 5000
+})
+
+// 添加请求拦截器，确保携带 token
+service.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+    console.log('发送请求:', {
+      url: config.baseURL + config.url,
+      method: config.method,
+      data: config.data
+    })
+    return config
+  },
+  error => {
+    console.error('请求错误:', error)
+    return Promise.reject(error)
+  }
+)
+
 
 export default request

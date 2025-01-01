@@ -22,9 +22,8 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, nextTick } from 'vue'  // 添加 nextTick 导入
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
 
 const router = useRouter()
 const props = defineProps({
@@ -37,14 +36,21 @@ const onClose = () => {
   emit('close')
 }
 
-const handleOptionClick = (type) => {
+// 简化路由跳转逻辑
+const handleOptionClick = async (type) => {
   emit('select', type)
   emit('close')
   
-  if (type === 'article') {
-    router.push('/article/edit')
-  } else if (type === 'post') {
-    router.push('/post/edit')
+  try {
+    // 等待关闭动画完成后再跳转
+    await nextTick()
+    if (type === 'post') {
+      await router.push('/post/edit')
+    } else if (type === 'article') {
+      await router.push('/article/edit')
+    }
+  } catch (err) {
+    console.error('路由跳转错误:', err)
   }
 }
 </script>

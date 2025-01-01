@@ -23,14 +23,14 @@
       <h1 class="article-title">{{ article.title }}</h1>
       
       <div class="content-blocks">
-        <template v-for="(block, index) in article.content" :key="index">
-          <div v-if="block.type === 'text'" class="text-block">
+        <template v-for="(block, index) in article.content">
+          <div v-if="block.type === 'text'" class="text-block" :key="index">
             {{ block.content }}
           </div>
-          <div v-else-if="block.type === 'subtitle'" class="subtitle-block">
+          <div v-else-if="block.type === 'subtitle'" class="subtitle-block" :key="index">
             {{ block.content }}
           </div>
-          <div v-else-if="block.type === 'image'" class="image-block">
+          <div v-else-if="block.type === 'image'" class="image-block" :key="index">
             <img 
               :src="block.content"
               @error="handleImageError"

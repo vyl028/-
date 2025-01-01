@@ -55,3 +55,22 @@ export const uncollectPost = (postId) => {
     method: 'delete'
   })
 }
+
+// 创建新帖子
+
+export function createPost(data) {
+  console.log('API 层 - 准备发送请求:', data)
+  
+  // 修改为与后端 urls.py 匹配的路径
+  const config = {
+    url: '/post/',  // 改为与后端 urls.py 中的路径匹配
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+  
+  console.log('完整请求配置:', config)
+  return request(config)
+}
